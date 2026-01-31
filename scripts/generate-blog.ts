@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Blog Post Generator Script for ThesisAI
+ * Blog Post Generator Script for Thesis Generator
  * Generates SEO-optimized MDX blog posts using DeepSeek API
  * with random Unsplash images
  * 
@@ -130,7 +130,7 @@ async function generateBlogPost() {
         seoKeywords.longtail[Math.floor(Math.random() * seoKeywords.longtail.length)],
       ];
 
-  const prompt = `Generate a comprehensive, SEO-optimized blog post about "${topic}" for ThesisAI, an AI-powered thesis and dissertation writing tool.
+  const prompt = `Generate a comprehensive, SEO-optimized blog post about "${topic}" for Thesis Generator, an AI-powered thesis and dissertation writing tool.
 
 Website: https://www.thesisgenerator.io
 
@@ -146,11 +146,11 @@ Requirements:
 6. Length: 2000-3000 words (high-quality, in-depth content)
 7. Include relevant statistics or research data where appropriate
 8. Naturally incorporate the keywords without keyword stuffing
-9. IMPORTANT: Include 2-3 natural mentions of ThesisAI with direct links to https://www.thesisgenerator.io throughout the article
+9. IMPORTANT: Include 2-3 natural mentions of Thesis Generator with direct links to https://www.thesisgenerator.io throughout the article
 10. Include FAQ section at the end with 4-5 common questions
 11. Make content helpful for graduate students, researchers, and academics
-12. Add a "Try ThesisAI Today" section near the end with link to https://www.thesisgenerator.io
-13. Use markdown link format: [ThesisAI](https://www.thesisgenerator.io) or [Try ThesisAI Free](https://www.thesisgenerator.io)
+12. Add a "Try Thesis Generator Today" section near the end with link to https://www.thesisgenerator.io
+13. Use markdown link format: [Thesis Generator](https://www.thesisgenerator.io) or [Try Thesis Generator Free](https://www.thesisgenerator.io)
 
 Meta description requirements:
 - Max 155 characters
@@ -163,7 +163,7 @@ Output format (in JSON):
   "slug": "url-friendly-slug",
   "description": "Meta description (max 155 chars)",
   "excerpt": "Short excerpt for previews (100-150 chars)",
-  "author": "ThesisAI Research Team",
+  "author": "Thesis Generator Research Team",
   "category": "One of: Writing Tips, Research, Technology, Productivity, Guides",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
   "keywords": ["seo", "keyword", "list"],

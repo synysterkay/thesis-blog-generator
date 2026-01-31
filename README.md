@@ -1,6 +1,6 @@
 # Thesis Blog Generator
 
-Automated blog post generator for ThesisAI using DeepSeek AI.
+Automated blog post generator for Thesis Generator using DeepSeek AI.
 
 ## Setup
 
