@@ -28,53 +28,50 @@ on:
     - cron: '0 9 * * *'
     - cron: '0 15 * * *'
 
+env:
+  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+  VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+
 jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout thesis app repo
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install tsx
 
       - name: Generate blog post
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          TOPIC: ${{ inputs.topic || 'Top Thesis Writing Tips for Graduate Students in 2026' }}
-          KEYWORDS: ${{ inputs.keywords || 'thesis writing,thesis tips,graduate thesis,AI thesis generator' }}
+          TOPIC: ${{ inputs.topic || '' }}
+          KEYWORDS: ${{ inputs.keywords || '' }}
           STYLE: ${{ inputs.style || 'informative' }}
-        run: npm run generate-blog
+        run: npx tsx scripts/generate-blog.ts
 
-      - name: Checkout thesispost repo
-        uses: actions/checkout@v4
-        with:
-          repository: synysterkay/thesispost
-          token: ${{ secrets.GH_PAT }}
-          path: thesispost-repo
-
-      - name: Copy generated posts to thesispost repo
+      - name: Move posts to posts directory
         run: |
-          # Create posts directory if it doesn't exist
-          mkdir -p thesispost-repo/posts
+          mkdir -p posts
           
           # Copy generated MDX files
           if [ -d "generated-posts" ]; then
-            cp generated-posts/*.mdx thesispost-repo/posts/ 2>/dev/null || true
+            cp generated-posts/*.mdx posts/ 2>/dev/null || true
             
             # Merge index.json files
             if [ -f "generated-posts/index.json" ]; then
-              if [ -f "thesispost-repo/posts/index.json" ]; then
+              if [ -f "posts/index.json" ]; then
                 # Merge existing and new posts
                 node -e "
                   const fs = require('fs');
-                  const existing = JSON.parse(fs.readFileSync('thesispost-repo/posts/index.json', 'utf8'));
+                  const existing = JSON.parse(fs.readFileSync('posts/index.json', 'utf8'));
                   const newPosts = JSON.parse(fs.readFileSync('generated-posts/index.json', 'utf8'));
                   
                   // Merge and dedupe by slug
@@ -88,28 +85,37 @@ jobs:
                   // Sort by date descending
                   merged.sort((a, b) => new Date(b.publishedAt || b.date) - new Date(a.publishedAt || a.date));
                   
-                  fs.writeFileSync('thesispost-repo/posts/index.json', JSON.stringify(merged, null, 2));
+                  fs.writeFileSync('posts/index.json', JSON.stringify(merged, null, 2));
                 "
               else
-                cp generated-posts/index.json thesispost-repo/posts/
+                cp generated-posts/index.json posts/
               fi
             fi
+            
+            # Clean up generated-posts folder
+            rm -rf generated-posts
           fi
 
-      - name: Commit and push to thesispost
+      - name: Commit and push
         run: |
-          cd thesispost-repo
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
-          git add .
+          git add posts/
           
           # Check if there are changes to commit
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "blog: Add new post - ${{ inputs.topic || 'Scheduled post' }}"
+            TOPIC="${{ inputs.topic || 'Scheduled post' }}"
+            git commit -m "blog: Add new post - ${TOPIC:0:50}"
             git push
           fi
+
+      - name: Trigger Vercel deployment
+        if: env.VERCEL_DEPLOY_HOOK != ''
+        run: |
+          curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+          echo "Triggered Vercel deployment"
 
       - name: Create summary
         run: |
@@ -121,9 +127,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Features" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ AI-generated with DeepSeek" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ SEO-optimized title and meta" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ SEO-optimized with links to https://www.thesisgenerator.io" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Random Unsplash featured image" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Proper heading structure (H2, H3)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ 2000-3000 words high-quality content" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ FAQ section included" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The post has been pushed to [thesispost](https://github.com/synysterkay/thesispost) repository." >> $GITHUB_STEP_SUMMARY
+          echo "Posts stored in [thesis-blog-generator/posts](https://github.com/synysterkay/thesis-blog-generator/tree/main/posts)" >> $GITHUB_STEP_SUMMARY
