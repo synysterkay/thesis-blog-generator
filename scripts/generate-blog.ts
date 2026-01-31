@@ -91,18 +91,22 @@ const seoKeywords = {
     'thesis writing tool',
     'research paper generator',
     'AI academic writing',
+    'essay ai',
+    'write my dissertation ai',
+    'free thesis writer',
   ],
   secondary: [
     'how to write a thesis',
     'thesis writing tips',
     'dissertation help',
     'research methodology',
-    'literature review',
+    'literature review generator',
     'thesis structure',
     'academic writing guide',
     'thesis introduction',
     'thesis conclusion',
     'thesis defense',
+    'academic paper generator',
   ],
   longtail: [
     'how to write a thesis introduction',
@@ -113,6 +117,9 @@ const seoKeywords = {
     'thesis writing step by step guide',
     'how to write methodology chapter',
     'thesis literature review example',
+    'automatic thesis statement generator',
+    'ai for literature review',
+    'best dissertation writing services ai',
   ],
 };
 
