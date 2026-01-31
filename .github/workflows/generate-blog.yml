@@ -23,10 +23,11 @@ on:
           - news
           - guide
 
-  # Generate 2 high-quality articles per day (9am and 3pm UTC)
+  # Generate 3 high-quality articles per day (8am, 2pm, and 8pm UTC)
   schedule:
-    - cron: '0 9 * * *'
-    - cron: '0 15 * * *'
+    - cron: '0 8 * * *'
+    - cron: '0 14 * * *'
+    - cron: '0 20 * * *'
 
 env:
   DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
