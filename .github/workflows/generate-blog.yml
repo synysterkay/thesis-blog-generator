@@ -23,9 +23,10 @@ on:
           - news
           - guide
 
-  # Allow scheduled generation (every Monday at 9am UTC)
+  # Generate 2 high-quality articles per day (9am and 3pm UTC)
   schedule:
-    - cron: '0 9 * * 1'
+    - cron: '0 9 * * *'
+    - cron: '0 15 * * *'
 
 jobs:
   generate:
