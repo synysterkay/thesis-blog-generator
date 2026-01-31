@@ -1,0 +1,11 @@
+{
+  "name": "thesis-blog-generator",
+  "version": "1.0.0",
+  "description": "AI-powered blog post generator for ThesisAI",
+  "scripts": {
+    "generate-blog": "tsx scripts/generate-blog.ts"
+  },
+  "dependencies": {
+    "tsx": "^4.7.0"
+  }
+}
