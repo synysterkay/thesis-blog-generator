@@ -1,0 +1,16 @@
+{
+  "name": "Thesis Generator",
+  "short_name": "Thesis AI",
+  "description": "Generate Complete Academic Theses with AI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
