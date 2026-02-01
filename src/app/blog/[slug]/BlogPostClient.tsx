@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Calendar, Clock, User, Share2, Bookmark, Tag } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Share2, Bookmark, Tag, ArrowRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface BlogPost {
@@ -24,11 +24,22 @@ interface BlogPost {
   content: string;
 }
 
-interface BlogPostClientProps {
-  post: BlogPost;
+interface RelatedPost {
+  slug: string;
+  title: string;
+  excerpt?: string;
+  category: string;
+  date: string;
+  readTime?: string;
+  image?: string;
 }
 
-export default function BlogPostClient({ post }: BlogPostClientProps) {
+interface BlogPostClientProps {
+  post: BlogPost;
+  relatedPosts?: RelatedPost[];
+}
+
+export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClientProps) {
   const handleShare = async () => {
     if (navigator.share) {
       await navigator.share({
@@ -94,7 +105,7 @@ export default function BlogPostClient({ post }: BlogPostClientProps) {
                   {(post.author || 'TA').split(' ').map(n => n[0]).join('').substring(0, 2)}
                 </div>
                 <div>
-                  <p className="font-medium text-slate-900">{post.author || 'ThesisAI Team'}</p>
+                  <p className="font-medium text-slate-900">{post.author || 'Thesis Generator Team'}</p>
                   <p className="text-sm text-slate-500">{post.authorRole || 'Research Team'}</p>
                 </div>
               </div>
@@ -166,7 +177,7 @@ export default function BlogPostClient({ post }: BlogPostClientProps) {
                 Ready to Start Your Thesis?
               </h3>
               <p className="text-blue-100 mb-6">
-                Let ThesisAI help you write your best academic work yet.
+                Let Thesis Generator help you write your best academic work yet.
               </p>
               <Link
                 href="/auth/signup"
@@ -177,6 +188,80 @@ export default function BlogPostClient({ post }: BlogPostClientProps) {
             </Card>
           </motion.div>
         </div>
+
+        {/* Recommended Articles */}
+        {relatedPosts.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-slate-900">Recommended Articles</h2>
+              <Link 
+                href="/blog" 
+                className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+              >
+                View all articles
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {relatedPosts.map((relatedPost, index) => (
+                <motion.div
+                  key={relatedPost.slug}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + index * 0.1 }}
+                >
+                  <Link href={`/blog/${relatedPost.slug}`}>
+                    <Card hover className="overflow-hidden h-full bg-white">
+                      <div className="aspect-[16/10] relative bg-gradient-to-br from-slate-100 to-slate-50">
+                        {relatedPost.image ? (
+                          <Image
+                            src={relatedPost.image}
+                            alt={relatedPost.title}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <div className="text-4xl opacity-40">📝</div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-5">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-medium rounded">
+                            {relatedPost.category}
+                          </span>
+                        </div>
+                        <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2">
+                          {relatedPost.title}
+                        </h3>
+                        <p className="text-sm text-slate-600 mb-3 line-clamp-2">
+                          {relatedPost.excerpt}
+                        </p>
+                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {relatedPost.date}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {relatedPost.readTime || '5 min read'}
+                          </span>
+                        </div>
+                      </div>
+                    </Card>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </motion.section>
+        )}
       </article>
 
       <Footer />

@@ -61,8 +61,8 @@ export default function UpgradePage() {
         </p>
       </div>
 
-      {/* Current Plan */}
-      {subscription?.status === 'active' && (
+      {/* Current Plan - Only show for paid subscribers */}
+      {subscription?.isActive && subscription?.isPremium && (
         <Card className="p-4 mb-8 bg-green-50 border-green-200">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
@@ -85,7 +85,7 @@ export default function UpgradePage() {
       )}
 
       {/* Pricing Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {PRICING_PLANS.map((plan) => (
           <Card 
             key={plan.id}
@@ -111,18 +111,20 @@ export default function UpgradePage() {
                 )}
               </div>
               <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-bold text-slate-900">${plan.price}</span>
-                <span className="text-slate-500">/{plan.interval === 'lifetime' ? 'once' : plan.interval}</span>
+                <span className="text-3xl font-bold text-slate-900">{plan.price === 0 ? 'Free' : `$${plan.price}`}</span>
+                {plan.price > 0 && (
+                  <span className="text-slate-500">/{plan.interval === 'lifetime' ? 'once' : plan.interval}</span>
+                )}
               </div>
               {plan.savings && (
                 <p className="text-sm text-green-600">{plan.savings}</p>
               )}
             </div>
 
-            <ul className="space-y-3 mb-6">
+            <ul className="space-y-2 mb-6">
               {plan.features.map((feature) => (
                 <li key={feature} className="flex items-start gap-2">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
                   <span className="text-slate-700 text-sm">{feature}</span>
                 </li>
               ))}
@@ -131,6 +133,10 @@ export default function UpgradePage() {
             {isCurrentPlan(plan.id) ? (
               <Button variant="secondary" className="w-full" disabled>
                 Current Plan
+              </Button>
+            ) : plan.id === 'free' ? (
+              <Button variant="outline" className="w-full" disabled>
+                Free Tier
               </Button>
             ) : (
               <Button
@@ -156,7 +162,7 @@ export default function UpgradePage() {
       <div className="mt-12 text-center">
         <p className="text-slate-600 mb-4">
           Questions about pricing?{' '}
-          <a href="mailto:support@thesisai.io" className="text-blue-600 hover:underline">
+          <a href="mailto:hello@thesisgenerator.io" className="text-blue-600 hover:underline">
             Contact us
           </a>
         </p>

@@ -11,41 +11,30 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
     .eq('user_id', userId)
     .single();
   
-  // Get user's premium status
-  const { data: user } = await supabase
-    .from('users')
-    .select('is_premium, subscription_status')
-    .eq('id', userId)
-    .single();
-  
-  if (!subscription || subscription.status !== 'active') {
+  // No subscription found or plan is free
+  if (!subscription || subscription.plan_type === 'free' || subscription.status !== 'active') {
     return {
       isActive: false,
       isPremium: false,
       planType: 'free',
       status: subscription?.status || null,
       renewsAt: null,
-      endsAt: subscription?.ends_at ? new Date(subscription.ends_at) : null,
-      customerPortalUrl: subscription?.customer_portal_url || null,
+      endsAt: subscription?.current_period_end ? new Date(subscription.current_period_end) : null,
+      customerPortalUrl: null,
     };
   }
   
-  // Determine plan type from plan_name
-  let planType: 'monthly' | 'yearly' | 'lifetime' = 'monthly';
-  if (subscription.plan_name?.toLowerCase().includes('lifetime')) {
-    planType = 'lifetime';
-  } else if (subscription.plan_name?.toLowerCase().includes('year')) {
-    planType = 'yearly';
-  }
+  // Determine plan type from plan_type field
+  const planType = subscription.plan_type as 'monthly' | 'yearly' | 'lifetime';
   
   return {
     isActive: true,
-    isPremium: user?.is_premium || false,
+    isPremium: true,
     planType,
     status: subscription.status,
-    renewsAt: subscription.renews_at ? new Date(subscription.renews_at) : null,
-    endsAt: subscription.ends_at ? new Date(subscription.ends_at) : null,
-    customerPortalUrl: subscription.customer_portal_url,
+    renewsAt: subscription.current_period_end ? new Date(subscription.current_period_end) : null,
+    endsAt: subscription.current_period_end ? new Date(subscription.current_period_end) : null,
+    customerPortalUrl: null, // Will be fetched dynamically when needed
   };
 }
 

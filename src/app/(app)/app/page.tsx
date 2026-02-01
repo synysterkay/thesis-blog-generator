@@ -5,25 +5,47 @@ import Link from 'next/link';
 import { useAuth } from '@/providers/auth-provider';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { motion } from 'framer-motion';
 import { 
   Plus, 
   FileText, 
-  Clock, 
-  TrendingUp, 
   Sparkles,
   ArrowRight,
-  BookOpen,
   Loader2,
-  Play
+  Play,
+  Clock,
+  Zap,
+  CheckCircle2,
+  BookOpen,
+  MessageSquare,
+  ChevronRight,
+  Download,
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
-import { Thesis } from '@/types';
+import { Thesis, Export } from '@/types';
+import { toast } from 'sonner';
 
 export default function DashboardPage() {
   const { user, subscription } = useAuth();
   const [theses, setTheses] = useState<Thesis[]>([]);
+  const [exports, setExports] = useState<Export[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chapterCounts, setChapterCounts] = useState<Record<string, number>>({});
   const supabase = createClient();
+
+  // Fetch exports
+  const fetchExports = async () => {
+    try {
+      const res = await fetch('/api/export/background');
+      if (res.ok) {
+        const data = await res.json();
+        setExports(data.exports || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch exports:', err);
+    }
+  };
 
   useEffect(() => {
     const fetchTheses = async () => {
@@ -37,12 +59,26 @@ export default function DashboardPage() {
         .limit(5);
 
       setTheses(data || []);
+      
+      // Fetch actual chapter counts
+      if (data && data.length > 0) {
+        const counts: Record<string, number> = {};
+        for (const thesis of data) {
+          const { count } = await supabase
+            .from('chapters')
+            .select('*', { count: 'exact', head: true })
+            .eq('thesis_id', thesis.id);
+          counts[thesis.id] = count || 0;
+        }
+        setChapterCounts(counts);
+      }
+      
       setLoading(false);
     };
 
     fetchTheses();
+    fetchExports();
 
-    // Subscribe to real-time updates for thesis status changes
     const channel = supabase
       .channel('dashboard-theses')
       .on(
@@ -65,192 +101,507 @@ export default function DashboardPage() {
       )
       .subscribe();
 
+    // Subscribe to export changes
+    const exportsChannel = supabase
+      .channel('dashboard-exports')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'exports',
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          // Show notification for completed exports
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            const exportRecord = payload.new as Export;
+            if (exportRecord.status === 'completed') {
+              toast.success(`Export ready: ${exportRecord.thesis_title}`, {
+                description: `Your ${exportRecord.format.toUpperCase()} is ready to download`,
+                action: {
+                  label: 'Download',
+                  onClick: () => handleDownload(exportRecord.id),
+                },
+              });
+            } else if (exportRecord.status === 'failed') {
+              toast.error(`Export failed: ${exportRecord.thesis_title}`, {
+                description: exportRecord.error_message || 'Please try again',
+              });
+            }
+          }
+          fetchExports();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(exportsChannel);
     };
   }, [user, supabase]);
 
-  const stats = [
-    { 
-      label: 'Total Theses', 
-      value: theses.length, 
-      icon: FileText, 
-      color: 'blue' 
-    },
-    { 
-      label: 'This Month', 
-      value: theses.filter(t => {
-        const date = new Date(t.created_at);
-        const now = new Date();
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-      }).length, 
-      icon: Clock, 
-      color: 'green' 
-    },
-    { 
-      label: 'Completed', 
-      value: theses.filter(t => t.status === 'completed').length, 
-      icon: TrendingUp, 
-      color: 'purple' 
-    },
-    { 
-      label: subscription?.status === 'active' ? 'Unlimited' : 'Free Tier', 
-      value: subscription?.status === 'active' ? '∞' : '1', 
-      icon: Sparkles, 
-      color: 'orange' 
-    },
-  ];
+  // Download handler
+  const handleDownload = async (exportId: string) => {
+    try {
+      const response = await fetch(`/api/export/download/${exportId}`);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/);
+      const filename = filenameMatch ? decodeURIComponent(filenameMatch[1]) : 'export';
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error('Download failed');
+    }
+  };
 
-  const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-100 text-blue-600',
-    green: 'bg-green-100 text-green-600',
-    purple: 'bg-purple-100 text-purple-600',
-    orange: 'bg-orange-100 text-orange-600',
+  // Delete handler
+  const handleDeleteExport = async (exportId: string) => {
+    try {
+      const response = await fetch(`/api/export/download/${exportId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Delete failed');
+      toast.success('Export deleted');
+      fetchExports();
+    } catch (err) {
+      toast.error('Failed to delete export');
+    }
+  };
+
+  const isPro = subscription?.status === 'active';
+  
+  // Get the most recent active thesis (draft or generating)
+  const activeThesis = theses.find(t => t.status === 'draft' || t.status === 'generating');
+  const completedTheses = theses.filter(t => t.status === 'completed');
+  
+  // Calculate insights
+  const totalWords = theses.reduce((acc, t) => acc + (t.total_words || 0), 0);
+  const avgChapters = theses.length > 0 
+    ? Math.round(theses.reduce((acc, t) => acc + (t.total_chapters || 0), 0) / theses.length) 
+    : 0;
+
+  // Time since last edit
+  const getTimeAgo = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diffMs = now.getTime() - then.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffDays > 0) return `${diffDays}d ago`;
+    if (diffHours > 0) return `${diffHours}h ago`;
+    if (diffMins > 0) return `${diffMins}m ago`;
+    return 'Just now';
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.08 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 12 },
+    visible: { opacity: 1, y: 0 }
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Welcome */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">
-          Welcome back, {user?.user_metadata?.full_name?.split(' ')[0] || 'Researcher'}!
-        </h1>
-        <p className="text-slate-600">
-          Ready to create something amazing today?
-        </p>
-      </div>
+    <div className="min-h-screen">
+      <motion.div 
+        className="max-w-5xl mx-auto"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Minimal Header */}
+        <motion.div variants={itemVariants} className="mb-8">
+          <p className="text-slate-500 text-sm">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+          <h1 className="text-xl font-medium text-slate-900 mt-1">
+            Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {user?.user_metadata?.full_name?.split(' ')[0] || 'there'}
+          </h1>
+        </motion.div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <Link href="/app/new">
-          <Card hover className="p-6 h-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white border-0">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Create New Thesis</h3>
-                <p className="text-blue-100 text-sm mb-4">
-                  Start generating your complete academic thesis with AI
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Primary Content */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* TIER 1: Hero Action - Continue or Create */}
+            <motion.div variants={itemVariants}>
+              {loading ? (
+                <div className="h-32 bg-slate-100 rounded-2xl animate-pulse" />
+              ) : activeThesis ? (
+                // Continue Working Card
+                <Link href={`/app/thesis/${activeThesis.id}`}>
+                  <div className="group relative rounded-2xl p-6 bg-white border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-300">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-3">
+                          {activeThesis.status === 'generating' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-medium">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Generating
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-medium">
+                              <Clock className="w-3 h-3" />
+                              In Progress
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-400">
+                            {getTimeAgo(activeThesis.updated_at)}
+                          </span>
+                        </div>
+                        
+                        <h2 className="text-lg font-medium text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
+                          {activeThesis.title}
+                        </h2>
+                        
+                        <p className="text-sm text-slate-500 mb-1">
+                          {activeThesis.total_chapters || 0} chapters • {activeThesis.academic_field || 'Academic'} • {activeThesis.writing_style || 'Formal'}
+                        </p>
+                        <p className="text-xs text-slate-400 mb-4">
+                          APA 7 • University-ready
+                        </p>
+                        
+                        {/* Progress indicator - based on chapters, not words */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all ${
+                                activeThesis.status === 'generating' 
+                                  ? 'bg-blue-500 animate-pulse' 
+                                  : 'bg-amber-500'
+                              }`}
+                              style={{ width: `${activeThesis.total_chapters ? Math.min(((activeThesis.outline?.chapters?.length || 0) / activeThesis.total_chapters) * 100, 100) : 0}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-slate-400">
+                            {activeThesis.outline?.chapters?.length || 0}/{activeThesis.total_chapters || 0} chapters
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="ml-4">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-blue-50 flex items-center justify-center transition-colors">
+                          <Play className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-sm font-medium text-blue-600">
+                        {activeThesis.status === 'generating' ? 'View Progress' : 'Continue Writing'}
+                      </span>
+                      <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                // Create New Card
+                <Link href="/app/new">
+                  <div className="group relative rounded-2xl p-6 bg-slate-900 hover:bg-slate-800 transition-all duration-300">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/10 text-white/80 text-xs font-medium mb-3">
+                          <Zap className="w-3 h-3" />
+                          AI-Powered
+                        </div>
+                        
+                        <h2 className="text-lg font-medium text-white mb-1">
+                          Create New Thesis
+                        </h2>
+                        
+                        <p className="text-sm text-slate-400 mb-4">
+                          Generate a complete academic thesis in minutes
+                        </p>
+                        
+                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                          <span>APA 7</span>
+                          <span>•</span>
+                          <span>MLA</span>
+                          <span>•</span>
+                          <span>Chicago</span>
+                        </div>
+                      </div>
+                      
+                      <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                        <Plus className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+                      <span className="text-sm font-medium text-white">
+                        Get Started
+                      </span>
+                      <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
+              )}
+            </motion.div>
+
+            {/* Submission-Ready Theses */}
+            {completedTheses.length > 0 && (
+              <motion.div variants={itemVariants}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-slate-700">Submission-Ready</h3>
+                  <Link href="/app/theses" className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1">
+                    View all <ChevronRight className="w-3 h-3" />
+                  </Link>
+                </div>
+                
+                <div className="space-y-2">
+                  {completedTheses.slice(0, 3).map((thesis) => (
+                    <Link key={thesis.id} href={`/app/thesis/${thesis.id}`}>
+                      <div className="group flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                            {thesis.title}
+                          </h4>
+                          <p className="text-xs text-slate-500">
+                            {thesis.total_words?.toLocaleString() || 0} words • {chapterCounts[thesis.id] ?? thesis.total_chapters ?? 0} chapters
+                          </p>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Quick Actions Row */}
+            {activeThesis && (
+              <motion.div variants={itemVariants}>
+                <Link href="/app/new">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
+                      <Plus className="w-4 h-4 text-slate-500" />
+                    </div>
+                    <span className="text-sm text-slate-600">Start another thesis</span>
+                  </div>
+                </Link>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Right Column - AI Assistant & Insights */}
+          <div className="space-y-6">
+            
+            {/* AI Assistant Panel */}
+            <motion.div variants={itemVariants}>
+              <div className="rounded-2xl p-5 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+                    <MessageSquare className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">AI Assistant</span>
+                </div>
+                
+                <p className="text-sm text-slate-600 mb-4 leading-relaxed">
+                  {activeThesis 
+                    ? `Ready to help with "${activeThesis.title.slice(0, 30)}${activeThesis.title.length > 30 ? '...' : ''}"`
+                    : 'Create a thesis and I\'ll help you write, refine, and perfect it.'
+                  }
                 </p>
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  Get Started <ArrowRight className="w-4 h-4" />
+                
+                {activeThesis ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-medium">
+                        Suggested
+                      </span>
+                    </div>
+                    <Link href={`/app/thesis/${activeThesis.id}`}>
+                      <Button size="sm" variant="secondary" className="w-full justify-start text-xs h-8">
+                        <Sparkles className="w-3 h-3 mr-2" />
+                        Generate next chapter
+                      </Button>
+                    </Link>
+                    <Link href="/app/new">
+                      <Button size="sm" variant="ghost" className="w-full justify-start text-xs h-8 text-slate-500">
+                        <Plus className="w-3 h-3 mr-2" />
+                        New thesis
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <Link href="/app/new">
+                    <Button size="sm" className="w-full text-xs h-8 bg-blue-600 hover:bg-blue-700">
+                      <Zap className="w-3 h-3 mr-2" />
+                      Create Thesis
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Insights Panel - Replace Stats */}
+            <motion.div variants={itemVariants}>
+              <div className="rounded-2xl p-5 bg-white border border-slate-200">
+                <h3 className="text-sm font-medium text-slate-700 mb-4">Insights</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-500">Total written</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {totalWords.toLocaleString()} words
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-500">Avg. chapters</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {avgChapters} per thesis
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-500">Completed</span>
+                    <span className="text-sm font-medium text-emerald-600">
+                      {completedTheses.length} submission-ready
+                    </span>
+                  </div>
+                  
+                  <div className="pt-3 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500">Formatting</span>
+                      <div className="flex items-center gap-1">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600">APA</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600">MLA</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600">Chicago</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Plus className="w-6 h-6" />
-              </div>
-            </div>
-          </Card>
-        </Link>
+            </motion.div>
 
-        <Link href="/app/theses">
-          <Card hover className="p-6 h-full">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">View All Theses</h3>
-                <p className="text-slate-600 text-sm mb-4">
-                  Continue working on your existing projects
-                </p>
-                <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
-                  Browse Library <ArrowRight className="w-4 h-4" />
+            {/* Pro Banner */}
+            {!isPro && (
+              <motion.div variants={itemVariants}>
+                <Link href="/app/upgrade">
+                  <div className="rounded-2xl p-4 bg-gradient-to-br from-violet-600 to-purple-700 text-white hover:from-violet-500 hover:to-purple-600 transition-all">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-4 h-4" />
+                      <span className="text-xs font-medium text-white/80">Pro Plan</span>
+                    </div>
+                    <p className="text-sm font-medium mb-1">Unlimited theses</p>
+                    <p className="text-xs text-white/70 mb-3">
+                      All chapters • Priority generation
+                    </p>
+                    <div className="flex items-center text-xs font-medium">
+                      Upgrade <ArrowRight className="w-3 h-3 ml-1" />
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            )}
+
+            {/* Exports Panel */}
+            {exports.length > 0 && (
+              <motion.div variants={itemVariants}>
+                <div className="rounded-2xl p-5 bg-white border border-slate-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Download className="w-4 h-4 text-slate-500" />
+                      <h3 className="text-sm font-medium text-slate-700">Exports</h3>
+                    </div>
+                    {exports.filter(e => e.status === 'pending' || e.status === 'processing').length > 0 && (
+                      <span className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                        Processing
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {exports.slice(0, 5).map((exp) => (
+                      <div 
+                        key={exp.id} 
+                        className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+                      >
+                        <div className={`w-6 h-6 rounded flex items-center justify-center ${
+                          exp.status === 'completed' ? 'bg-emerald-100' :
+                          exp.status === 'failed' ? 'bg-red-100' :
+                          'bg-blue-100'
+                        }`}>
+                          {exp.status === 'completed' ? (
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          ) : exp.status === 'failed' ? (
+                            <AlertCircle className="w-3 h-3 text-red-600" />
+                          ) : (
+                            <Loader2 className="w-3 h-3 text-blue-600 animate-spin" />
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-slate-700 truncate">
+                            {exp.thesis_title}
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            {exp.format.toUpperCase()} • {exp.file_size ? `${(exp.file_size / 1024).toFixed(0)} KB` : getTimeAgo(exp.created_at)}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          {exp.status === 'completed' && (
+                            <button
+                              onClick={() => handleDownload(exp.id)}
+                              className="p-1.5 rounded hover:bg-slate-200 text-slate-500 hover:text-blue-600 transition-colors"
+                              title="Download"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteExport(exp.id)}
+                            className="p-1.5 rounded hover:bg-slate-200 text-slate-400 hover:text-red-500 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600">
-                <BookOpen className="w-6 h-6" />
-              </div>
-            </div>
-          </Card>
-        </Link>
-      </div>
+              </motion.div>
+            )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.label} className="p-4">
-              <div className={`w-10 h-10 rounded-lg ${colorClasses[stat.color]} flex items-center justify-center mb-3`}>
-                <Icon className="w-5 h-5" />
+            {/* Academic Standards */}
+            <motion.div variants={itemVariants}>
+              <div className="rounded-xl p-4 bg-slate-50 border border-slate-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <BookOpen className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs font-medium text-slate-600">Academic Standards</span>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  All theses follow university formatting guidelines and citation standards. Export in PDF, DOCX, or LaTeX.
+                </p>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-              <p className="text-sm text-slate-500">{stat.label}</p>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Recent Theses */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Theses</h2>
-          <Link href="/app/theses" className="text-sm text-blue-600 hover:underline">
-            View All
-          </Link>
+            </motion.div>
+          </div>
         </div>
-
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-20 bg-slate-100 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : theses.length === 0 ? (
-          <Card className="p-8 text-center">
-            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <FileText className="w-8 h-8 text-slate-400" />
-            </div>
-            <h3 className="font-semibold text-slate-900 mb-2">No theses yet</h3>
-            <p className="text-slate-600 mb-4">Create your first thesis to get started</p>
-            <Link href="/app/new">
-              <Button>
-                <Plus className="mr-2 w-4 h-4" />
-                Create Thesis
-              </Button>
-            </Link>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {theses.map((thesis) => (
-              <Link key={thesis.id} href={`/app/thesis/${thesis.id}`}>
-                <Card hover className="p-4 flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    thesis.status === 'completed' ? 'bg-green-100 text-green-600' :
-                    thesis.status === 'generating' ? 'bg-blue-100 text-blue-600' :
-                    'bg-slate-100 text-slate-600'
-                  }`}>
-                    {thesis.status === 'generating' ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <FileText className="w-5 h-5" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-slate-900 truncate">{thesis.title}</h3>
-                    <p className="text-sm text-slate-500 truncate">{thesis.academic_field || 'No field'} • {thesis.writing_style || 'Academic'}</p>
-                  </div>
-                  <div className="hidden sm:block">
-                    {thesis.status === 'draft' ? (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 flex items-center gap-1">
-                        <Play className="w-3 h-3" /> Continue
-                      </span>
-                    ) : thesis.status === 'generating' ? (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" /> Generating
-                      </span>
-                    ) : (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        thesis.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        'bg-slate-100 text-slate-700'
-                      }`}>
-                        {thesis.status.charAt(0).toUpperCase() + thesis.status.slice(1)}
-                      </span>
-                    )}
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-slate-400" />
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+      </motion.div>
     </div>
   );
 }

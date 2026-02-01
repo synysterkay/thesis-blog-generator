@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
@@ -14,11 +14,13 @@ import {
   Menu,
   X,
   CreditCard,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LogoIcon } from '@/components/ui/logo';
 import { toast } from 'sonner';
+import { Export } from '@/types';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -28,15 +30,54 @@ const navItems = [
   { label: 'Dashboard', href: '/app', icon: LayoutDashboard },
   { label: 'My Theses', href: '/app/theses', icon: FileText },
   { label: 'New Thesis', href: '/app/new', icon: Plus },
+  { label: 'Exports', href: '/app/exports', icon: Download },
   { label: 'Settings', href: '/app/settings', icon: Settings },
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [processingExports, setProcessingExports] = useState(0);
   const pathname = usePathname();
   const router = useRouter();
   const { user, subscription, loading } = useAuth();
   const supabase = createClient();
+
+  // Track processing exports for indicator
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProcessingExports = async () => {
+      const { data } = await supabase
+        .from('exports')
+        .select('id')
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'processing']);
+      setProcessingExports(data?.length || 0);
+    };
+
+    fetchProcessingExports();
+
+    // Subscribe to export changes
+    const channel = supabase
+      .channel('layout-exports')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'exports',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchProcessingExports();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, supabase]);
 
   const handleLogout = async () => {
     try {
@@ -76,7 +117,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
                 <LogoIcon size="sm" variant="white" />
               </div>
-              <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">ThesisAI</span>
+              <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Thesis Generator</span>
             </Link>
             <button 
               className="lg:hidden p-2 rounded-lg hover:bg-slate-100"
@@ -91,6 +132,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || (item.href !== '/app' && pathname.startsWith(item.href));
+              const isExportsWithProcessing = item.href === '/app/exports' && processingExports > 0;
               
               return (
                 <Link
@@ -103,8 +145,21 @@ export default function AppLayout({ children }: AppLayoutProps) {
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <div className="relative">
+                    <Icon className={`w-5 h-5 ${isExportsWithProcessing ? 'animate-pulse' : ''}`} />
+                    {isExportsWithProcessing && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full animate-ping" />
+                    )}
+                    {isExportsWithProcessing && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full" />
+                    )}
+                  </div>
                   <span className="font-medium">{item.label}</span>
+                  {isExportsWithProcessing && (
+                    <span className="ml-auto px-1.5 py-0.5 text-[10px] font-semibold bg-blue-100 text-blue-600 rounded-full">
+                      {processingExports}
+                    </span>
+                  )}
                 </Link>
               );
             })}

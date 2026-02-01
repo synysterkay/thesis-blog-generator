@@ -52,7 +52,7 @@ export default function AboutPage() {
               <LogoIcon size="lg" variant="white" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
-              About ThesisAI
+              About Thesis Generator
             </h1>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
               We&apos;re on a mission to democratize academic writing by making AI-powered research assistance available to students and researchers everywhere.

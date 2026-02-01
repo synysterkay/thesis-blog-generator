@@ -35,6 +35,8 @@ interface ChapterContent {
   subchapters?: string[];
   subchaptersWithVisuals?: Array<{ title: string; hasTable?: boolean; hasChart?: boolean }>;
   text?: string;
+  tables?: Array<{ caption: string; columns: string[]; rows: string[][]; source: string; section?: string }>;
+  charts?: Array<{ caption: string; type: string; labels: string[]; data: number[]; xlabel?: string; ylabel?: string; source?: string; section?: string }>;
 }
 
 export default function ChapterPage({ 
@@ -46,6 +48,7 @@ export default function ChapterPage({
   const [thesis, setThesis] = useState<Thesis | null>(null);
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [parsedContent, setParsedContent] = useState<ChapterContent>({});
   const [loading, setLoading] = useState(true);
   
   // Editing state
@@ -75,10 +78,12 @@ export default function ChapterPage({
       const parsed = typeof content === 'string' ? JSON.parse(content) : content;
       let subchapters: string[] = [];
       if (parsed.subchaptersWithVisuals && Array.isArray(parsed.subchaptersWithVisuals)) {
-        subchapters = parsed.subchaptersWithVisuals.map((s: { title: string }) => s.title);
+        subchapters = parsed.subchaptersWithVisuals.map((s: { title?: string } | string) => 
+          typeof s === 'string' ? s : (s?.title || 'Untitled Section')
+        );
       } else if (parsed.subchapters && Array.isArray(parsed.subchapters)) {
-        subchapters = parsed.subchapters.map((s: string | { title: string }) => 
-          typeof s === 'string' ? s : s.title
+        subchapters = parsed.subchapters.map((s: string | { title?: string }) => 
+          typeof s === 'string' ? s : (s?.title || 'Untitled Section')
         );
       }
       return {
@@ -127,8 +132,9 @@ export default function ChapterPage({
 
       setChapter(currentChapter);
       
-      const parsedContent = parseChapterContent(currentChapter.content as string | null);
-      const textContent = parsedContent.text || '';
+      const parsed = parseChapterContent(currentChapter.content as string | null);
+      setParsedContent(parsed);
+      const textContent = parsed.text || '';
       setEditedContent(textContent);
       setOriginalContent(textContent);
       
@@ -150,8 +156,9 @@ export default function ChapterPage({
         (payload) => {
           if (!isEditing) {
             setChapter(payload.new as Chapter);
-            const parsedContent = parseChapterContent((payload.new as Chapter).content as string | null);
-            const textContent = parsedContent.text || '';
+            const parsed = parseChapterContent((payload.new as Chapter).content as string | null);
+            setParsedContent(parsed);
+            const textContent = parsed.text || '';
             setEditedContent(textContent);
             setOriginalContent(textContent);
           }
@@ -181,6 +188,8 @@ export default function ChapterPage({
         subchapters: existingContent.subchapters,
         subchaptersWithVisuals: existingContent.subchaptersWithVisuals,
         text: content,
+        tables: existingContent.tables,
+        charts: existingContent.charts,
       });
       
       const { error } = await supabase
@@ -342,7 +351,7 @@ export default function ChapterPage({
 
   if (!thesis || !chapter) return null;
 
-  const content = parseChapterContent(chapter.content as string | null);
+  const content = parsedContent;
 
   // Chapter is still generating
   if (chapter.status === 'generating' || chapter.status === 'pending') {
@@ -642,7 +651,7 @@ export default function ChapterPage({
       </Card>
 
       {/* Tables */}
-      {chapter.tables && Array.isArray(chapter.tables) && chapter.tables.length > 0 && (
+      {parsedContent.tables && Array.isArray(parsedContent.tables) && parsedContent.tables.length > 0 && (
         <Card className="p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -655,7 +664,7 @@ export default function ChapterPage({
             />
           </div>
           <div className="space-y-8">
-            {chapter.tables.map((table, idx) => (
+            {parsedContent.tables!.map((table, idx) => (
               <TableRenderer
                 key={idx}
                 table={table}
@@ -668,7 +677,7 @@ export default function ChapterPage({
       )}
 
       {/* Charts */}
-      {chapter.charts && Array.isArray(chapter.charts) && chapter.charts.length > 0 && (
+      {parsedContent.charts && Array.isArray(parsedContent.charts) && parsedContent.charts.length > 0 && (
         <Card className="p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -681,10 +690,10 @@ export default function ChapterPage({
             />
           </div>
           <div className="space-y-8">
-            {chapter.charts.map((chart, idx) => (
+            {parsedContent.charts!.map((chart, idx) => (
               <div key={idx} className="p-4 bg-slate-50 rounded-lg">
                 <ChartRenderer
-                  chart={chart}
+                  chart={chart as any}
                   theme={chartTheme}
                   height={350}
                 />

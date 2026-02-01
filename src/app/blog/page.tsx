@@ -5,7 +5,7 @@ import BlogPageClient from './BlogPageClient';
 const SITE_URL = 'https://thesisgenerator.io';
 
 export const metadata: Metadata = {
-  title: 'Blog - Thesis Writing Tips & AI Research Guides | ThesisAI',
+  title: 'Blog - Thesis Writing Tips & AI Research Guides | Thesis Generator',
   description: 'Expert guides on thesis writing, dissertation help, research methodology, and AI-powered academic writing. Tips for graduate students, PhD candidates, and researchers.',
   keywords: [
     'thesis writing tips',
@@ -24,23 +24,23 @@ export const metadata: Metadata = {
     'AI academic writing',
   ],
   openGraph: {
-    title: 'Blog - Thesis Writing Tips & AI Research Guides | ThesisAI',
+    title: 'Blog - Thesis Writing Tips & AI Research Guides | Thesis Generator',
     description: 'Expert guides on thesis writing, dissertation help, and AI-powered academic writing for graduate students and researchers.',
     url: `${SITE_URL}/blog`,
-    siteName: 'ThesisAI',
+    siteName: 'Thesis Generator',
     type: 'website',
     images: [
       {
         url: getBlogImageByIndex(0),
         width: 800,
         height: 600,
-        alt: 'ThesisAI Blog - Academic Writing Guides',
+        alt: 'Thesis Generator Blog - Academic Writing Guides',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Blog - Thesis Writing Tips & AI Research Guides | ThesisAI',
+    title: 'Blog - Thesis Writing Tips & AI Research Guides | Thesis Generator',
     description: 'Expert guides on thesis writing, dissertation help, and AI-powered academic writing.',
     images: [getBlogImageByIndex(0)],
   },
@@ -86,7 +86,7 @@ const staticPosts: BlogPost[] = [
     readTime: '8 min read',
     image: getBlogImageByIndex(0),
     featured: true,
-    author: 'ThesisAI Research Team',
+    author: 'Thesis Generator Research Team',
     tags: ['thesis writing', 'introduction', 'academic writing'],
   },
   {
@@ -98,19 +98,19 @@ const staticPosts: BlogPost[] = [
     readTime: '12 min read',
     image: getBlogImageByIndex(1),
     featured: true,
-    author: 'ThesisAI Research Team',
+    author: 'Thesis Generator Research Team',
     tags: ['literature review', 'research', 'graduate school'],
   },
   {
     slug: 'ai-thesis-writing-guide',
     title: 'How AI Can Help You Write Your Thesis Faster',
-    excerpt: 'Discover how AI-powered tools like ThesisAI can accelerate your thesis writing process while maintaining academic integrity.',
+    excerpt: 'Discover how AI-powered tools like Thesis Generator can accelerate your thesis writing process while maintaining academic integrity.',
     category: 'Technology',
     date: 'January 22, 2026',
     readTime: '10 min read',
     image: getBlogImageByIndex(15),
     featured: true,
-    author: 'ThesisAI Research Team',
+    author: 'Thesis Generator Research Team',
     tags: ['AI writing', 'thesis generator', 'productivity'],
   },
   {
@@ -122,7 +122,7 @@ const staticPosts: BlogPost[] = [
     readTime: '15 min read',
     image: getBlogImageByIndex(20),
     featured: false,
-    author: 'ThesisAI Research Team',
+    author: 'Thesis Generator Research Team',
     tags: ['methodology', 'research methods', 'thesis writing'],
   },
   {
@@ -134,7 +134,7 @@ const staticPosts: BlogPost[] = [
     readTime: '7 min read',
     image: getBlogImageByIndex(25),
     featured: false,
-    author: 'ThesisAI Research Team',
+    author: 'Thesis Generator Research Team',
     tags: ['productivity', 'writers block', 'motivation'],
   },
   {
@@ -146,7 +146,7 @@ const staticPosts: BlogPost[] = [
     readTime: '9 min read',
     image: getBlogImageByIndex(2),
     featured: false,
-    author: 'ThesisAI Research Team',
+    author: 'Thesis Generator Research Team',
     tags: ['citations', 'APA', 'MLA', 'Chicago style'],
   },
 ];
@@ -157,7 +157,7 @@ async function getGitHubPosts(): Promise<BlogPost[]> {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     
     const response = await fetch(
-      'https://raw.githubusercontent.com/synysterkay/thesispost/main/posts/index.json',
+      'https://raw.githubusercontent.com/synysterkay/thesis-blog-generator/main/posts/index.json',
       { 
         next: { revalidate: 300 }, // Revalidate every 5 minutes
         signal: controller.signal 

@@ -1,11 +1,24 @@
 export const PRICING_PLANS = [
   {
+    id: 'free' as const,
+    name: 'Free',
+    price: 0,
+    interval: 'month' as const,
+    popular: false,
+    features: [
+      '1 thesis per month',
+      'Up to 5 chapters',
+      'Basic text export',
+      'Standard processing',
+      'Community support',
+    ],
+  },
+  {
     id: 'monthly' as const,
     name: 'Pro Monthly',
     price: 9.99,
     interval: 'month' as const,
     popular: false,
-    variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID || '',
     features: [
       'Unlimited thesis generation',
       'Auto-generated tables & charts',
@@ -21,7 +34,6 @@ export const PRICING_PLANS = [
     interval: 'year' as const,
     popular: true,
     savings: 'Save 33%',
-    variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_YEARLY_VARIANT_ID || '',
     features: [
       'Everything in Monthly',
       '2 months free',
@@ -37,7 +49,6 @@ export const PRICING_PLANS = [
     interval: 'lifetime' as const,
     popular: false,
     badge: 'Best Value',
-    variantId: process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID || '',
     features: [
       'Everything forever',
       'All future features',

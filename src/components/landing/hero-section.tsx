@@ -85,7 +85,7 @@ export function HeroSection() {
         >
           Generate Complete
           <span className="block bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-            Academic Theses
+            Theses & Dissertations
           </span>
         </motion.h1>
         
@@ -96,8 +96,7 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          Create 90+ page research papers with proper structure, 
-          auto-generated tables & charts, and human-like academic writing.
+          The most advanced AI Thesis Generator. Create 90+ page research papers, essays, and literature reviews with proper structure, auto-generated tables & charts, and human-like academic writing.
         </motion.p>
         
         {/* CTA Buttons */}
@@ -186,7 +185,7 @@ export function HeroSection() {
             </div>
             <div className="flex-1 flex justify-center">
               <div className="px-4 py-1 rounded-md bg-white border border-slate-200 text-xs text-slate-500">
-                thesisai.io/app/generate
+                thesisgenerator.io/app/generate
               </div>
             </div>
           </div>

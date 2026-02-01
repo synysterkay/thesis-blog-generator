@@ -1,9 +1,9 @@
 /**
  * GitHub Blog Fetcher
- * Fetches blog posts from GitHub repository: synysterkay/thesispost
+ * Fetches blog posts from GitHub repository: synysterkay/thesis-blog-generator
  */
 
-const GITHUB_REPO = 'thesispost';
+const GITHUB_REPO = 'thesis-blog-generator';
 const GITHUB_OWNER = 'synysterkay';
 const GITHUB_BRANCH = 'main';
 const POSTS_PATH = 'posts';

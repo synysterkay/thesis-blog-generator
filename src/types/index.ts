@@ -47,12 +47,17 @@ export interface Thesis {
   topic: string;
   academic_field: string | null;
   writing_style: 'academic' | 'technical' | 'descriptive';
+  target_length: 'short' | 'medium' | 'long' | 'comprehensive';
   language: string;
   status: 'draft' | 'generating' | 'completed' | 'exported';
   total_chapters: number;
   total_words: number;
   total_pages: number;
   outline: ThesisOutline | null;
+  outlines: unknown[] | null;
+  chapter_titles: string[] | null;
+  enableTables: boolean;
+  enableCharts: boolean;
   metadata: ThesisMetadata | null;
   created_at: string;
   updated_at: string;
@@ -210,6 +215,20 @@ export interface ExportOptions {
   includeCoverPage: boolean;
   includeReferences: boolean;
   pageSize: 'A4' | 'Letter';
+}
+
+export interface Export {
+  id: string;
+  user_id: string;
+  thesis_id: string;
+  thesis_title: string;
+  format: ExportFormat;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  file_path: string | null;
+  file_size: number | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // Pricing plans

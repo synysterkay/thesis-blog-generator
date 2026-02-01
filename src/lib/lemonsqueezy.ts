@@ -1,23 +1,18 @@
 import crypto from 'crypto';
 
-const LEMONSQUEEZY_API_KEY = process.env.LEMONSQUEEZY_API_KEY!;
-const LEMONSQUEEZY_STORE_ID = process.env.LEMONSQUEEZY_STORE_ID!;
-
+// Define plan metadata (prices, names)
 export const THESIS_PLANS = {
   monthly: {
-    variantId: process.env.LEMONSQUEEZY_THESIS_MONTHLY_VARIANT_ID!,
     name: 'Thesis Generator Pro Monthly',
     price: 9.99,
     interval: 'month' as const,
   },
   yearly: {
-    variantId: process.env.LEMONSQUEEZY_THESIS_YEARLY_VARIANT_ID!,
     name: 'Thesis Generator Pro Yearly',
     price: 79.99,
     interval: 'year' as const,
   },
   lifetime: {
-    variantId: process.env.LEMONSQUEEZY_THESIS_LIFETIME_VARIANT_ID!,
     name: 'Thesis Generator Lifetime',
     price: 199.99,
     interval: 'lifetime' as const,
@@ -26,16 +21,46 @@ export const THESIS_PLANS = {
 
 export type PlanType = keyof typeof THESIS_PLANS;
 
+// Get variant ID at runtime to ensure env vars are loaded
+function getVariantId(plan: PlanType): string {
+  const variantIds: Record<PlanType, string | undefined> = {
+    monthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID,
+    yearly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_YEARLY_VARIANT_ID,
+    lifetime: process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID,
+  };
+  return variantIds[plan] || '';
+}
+
 export async function createCheckout(
   userId: string,
   email: string,
   plan: PlanType
 ): Promise<string> {
-  const variant = THESIS_PLANS[plan];
+  // Get env vars at runtime
+  const LEMONSQUEEZY_API_KEY = process.env.LEMONSQUEEZY_API_KEY;
+  const LEMONSQUEEZY_STORE_ID = process.env.LEMONSQUEEZY_STORE_ID;
+  const variantId = getVariantId(plan);
   
-  if (!variant.variantId) {
+  if (!variantId) {
+    console.error(`Variant ID not configured for plan: ${plan}. Available env vars:`, {
+      monthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID ? 'set' : 'missing',
+      yearly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_YEARLY_VARIANT_ID ? 'set' : 'missing',
+      lifetime: process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID ? 'set' : 'missing',
+    });
     throw new Error(`Variant ID not configured for plan: ${plan}`);
   }
+
+  if (!LEMONSQUEEZY_API_KEY) {
+    console.error('LEMONSQUEEZY_API_KEY is not set');
+    throw new Error('LemonSqueezy API key not configured');
+  }
+
+  if (!LEMONSQUEEZY_STORE_ID) {
+    console.error('LEMONSQUEEZY_STORE_ID is not set');
+    throw new Error('LemonSqueezy store ID not configured');
+  }
+
+  console.log('Creating checkout:', { plan, variantId, storeId: LEMONSQUEEZY_STORE_ID });
 
   const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
     method: 'POST',
@@ -54,11 +79,6 @@ export async function createCheckout(
               user_id: userId,
             },
           },
-          checkout_options: {
-            dark: false,
-            accent_color: '#2563EB',
-            logo: `${process.env.NEXT_PUBLIC_SITE_URL}/logo.png`,
-          },
           product_options: {
             redirect_url: `${process.env.NEXT_PUBLIC_SITE_URL}/app?success=true`,
             receipt_button_text: 'Go to Dashboard',
@@ -75,7 +95,7 @@ export async function createCheckout(
           variant: {
             data: {
               type: 'variants',
-              id: variant.variantId,
+              id: variantId,
             },
           },
         },
@@ -85,11 +105,12 @@ export async function createCheckout(
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error('LemonSqueezy checkout error:', errorData);
-    throw new Error('Failed to create checkout session');
+    console.error('LemonSqueezy checkout error:', JSON.stringify(errorData, null, 2));
+    throw new Error(`Failed to create checkout session: ${errorData?.errors?.[0]?.detail || 'Unknown error'}`);
   }
 
   const data = await response.json();
+  console.log('Checkout created successfully:', data.data.attributes.url);
   return data.data.attributes.url;
 }
 
@@ -113,6 +134,9 @@ export function verifyWebhookSignature(
 
 export async function getCustomerPortalUrl(customerId: string): Promise<string | null> {
   try {
+    const LEMONSQUEEZY_API_KEY = process.env.LEMONSQUEEZY_API_KEY;
+    if (!LEMONSQUEEZY_API_KEY) return null;
+    
     const response = await fetch(
       `https://api.lemonsqueezy.com/v1/customers/${customerId}`,
       {
@@ -136,6 +160,9 @@ export async function getCustomerPortalUrl(customerId: string): Promise<string |
 
 export async function cancelSubscription(subscriptionId: string): Promise<boolean> {
   try {
+    const LEMONSQUEEZY_API_KEY = process.env.LEMONSQUEEZY_API_KEY;
+    if (!LEMONSQUEEZY_API_KEY) return false;
+    
     const response = await fetch(
       `https://api.lemonsqueezy.com/v1/subscriptions/${subscriptionId}`,
       {

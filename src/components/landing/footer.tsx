@@ -30,7 +30,7 @@ export function Footer() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
                 <LogoIcon size="sm" variant="white" />
               </div>
-              <span className="font-bold text-lg">ThesisAI</span>
+              <span className="font-bold text-lg">Thesis Generator</span>
             </Link>
             <p className="text-slate-400 text-sm mb-4">
               AI-powered thesis generation for researchers and students worldwide.

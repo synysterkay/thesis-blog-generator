@@ -21,7 +21,7 @@ async function getBlogPosts(): Promise<BlogPost[]> {
     const timeoutId = setTimeout(() => controller.abort(), 5000)
     
     const response = await fetch(
-      'https://raw.githubusercontent.com/synysterkay/thesispost/main/posts/index.json',
+      'https://raw.githubusercontent.com/synysterkay/thesis-blog-generator/main/posts/index.json',
       { 
         next: { revalidate: 3600 },
         signal: controller.signal

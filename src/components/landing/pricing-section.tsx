@@ -7,9 +7,23 @@ import { Button } from '@/components/ui/button';
 import { PRICING_PLANS } from '@/lib/constants';
 
 export function PricingSection() {
+  const getButtonLink = (planId: string) => {
+    if (planId === 'free') {
+      return '/auth/signup';
+    }
+    return '/auth/signup?plan=' + planId;
+  };
+
+  const getButtonText = (planId: string) => {
+    if (planId === 'free') {
+      return 'Start Free';
+    }
+    return 'Get Started';
+  };
+
   return (
     <section id="pricing" className="py-24 bg-slate-50">
-      <div className="max-w-5xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -25,7 +39,7 @@ export function PricingSection() {
           </p>
         </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {PRICING_PLANS.map((plan, index) => (
             <motion.div
               key={plan.id}
@@ -33,9 +47,9 @@ export function PricingSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative p-8 rounded-2xl ${
+              className={`relative p-6 rounded-2xl ${
                 plan.popular 
-                  ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl scale-105' 
+                  ? 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xl scale-105 z-10' 
                   : 'bg-white border border-slate-200 shadow-card'
               }`}
             >
@@ -61,35 +75,37 @@ export function PricingSection() {
               )}
               
               <div className="flex items-baseline gap-1 mb-2">
-                <span className="text-4xl font-bold">${plan.price}</span>
-                <span className={plan.popular ? 'text-blue-200' : 'text-slate-500'}>
-                  /{plan.interval === 'lifetime' ? 'once' : plan.interval}
-                </span>
+                <span className="text-3xl font-bold">{plan.price === 0 ? 'Free' : `$${plan.price}`}</span>
+                {plan.price > 0 && (
+                  <span className={plan.popular ? 'text-blue-200' : 'text-slate-500'}>
+                    /{plan.interval === 'lifetime' ? 'once' : plan.interval}
+                  </span>
+                )}
               </div>
               
               {plan.savings && (
-                <p className={`text-sm mb-6 ${plan.popular ? 'text-blue-200' : 'text-green-600'}`}>
+                <p className={`text-sm mb-4 ${plan.popular ? 'text-blue-200' : 'text-green-600'}`}>
                   {plan.savings}
                 </p>
               )}
               
-              {!plan.savings && <div className="mb-6" />}
+              {!plan.savings && <div className="mb-4" />}
               
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-2 mb-6">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2">
-                    <Check className={`w-5 h-5 flex-shrink-0 ${plan.popular ? 'text-green-400' : 'text-green-500'}`} />
-                    <span className={plan.popular ? 'text-white' : 'text-slate-700'}>{feature}</span>
+                  <li key={feature} className="flex items-start gap-2">
+                    <Check className={`w-4 h-4 flex-shrink-0 mt-0.5 ${plan.popular ? 'text-green-400' : 'text-green-500'}`} />
+                    <span className={`text-sm ${plan.popular ? 'text-white' : 'text-slate-700'}`}>{feature}</span>
                   </li>
                 ))}
               </ul>
               
-              <Link href="/auth/signup">
+              <Link href={getButtonLink(plan.id)}>
                 <Button 
                   className={`w-full ${plan.popular ? 'bg-white text-blue-600 hover:bg-blue-50' : ''}`}
-                  variant={plan.popular ? 'secondary' : 'default'}
+                  variant={plan.id === 'free' ? 'outline' : plan.popular ? 'secondary' : 'default'}
                 >
-                  Get Started
+                  {getButtonText(plan.id)}
                 </Button>
               </Link>
             </motion.div>

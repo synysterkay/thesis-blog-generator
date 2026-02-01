@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Background -->
+  <rect width="512" height="512" rx="64" fill="#F8FAFC"/>
+  
+  <!-- Document base -->
+  <rect x="128" y="48" width="256" height="416" rx="24" fill="#3B82F6"/>
+  <rect x="152" y="72" width="208" height="368" rx="16" fill="white"/>
+  
+  <!-- Document lines -->
+  <rect x="176" y="120" width="160" height="24" rx="4" fill="#E5E7EB"/>
+  <rect x="176" y="160" width="140" height="24" rx="4" fill="#E5E7EB"/>
+  <rect x="176" y="200" width="160" height="24" rx="4" fill="#E5E7EB"/>
+  <rect x="176" y="240" width="120" height="24" rx="4" fill="#E5E7EB"/>
+  <rect x="176" y="280" width="160" height="24" rx="4" fill="#E5E7EB"/>
+  <rect x="176" y="320" width="100" height="24" rx="4" fill="#E5E7EB"/>
+  <rect x="176" y="360" width="140" height="24" rx="4" fill="#E5E7EB"/>
+  
+  <!-- AI sparkle badge -->
+  <circle cx="360" cy="120" r="72" fill="#8B5CF6"/>
+  <path d="M360 60L372 96L408 108L372 120L360 156L348 120L312 108L348 96L360 60Z" fill="white"/>
+  
+  <!-- Small sparkles -->
+  <circle cx="320" cy="160" r="8" fill="#A78BFA"/>
+  <circle cx="400" cy="80" r="6" fill="#C4B5FD"/>
+</svg>

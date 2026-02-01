@@ -5,6 +5,7 @@ import {
   generateSectionContent,
   generateIntroduction,
   generateConclusion,
+  generateReferences,
   generateTableData,
   generateChartData,
   isNonDataChapter
@@ -12,8 +13,9 @@ import {
 import { NextResponse } from 'next/server';
 import { Chapter, Thesis } from '@/types';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { after } from 'next/server';
 
-export const maxDuration = 60; // 60 seconds for Vercel Pro
+export const maxDuration = 300; // 5 minutes for Vercel Pro
 
 // Free users get 3 chapters, premium gets unlimited
 const FREE_USER_CHAPTER_LIMIT = 3;
@@ -71,8 +73,39 @@ export async function POST(request: Request) {
       .update({ status: 'generating' })
       .eq('id', thesisId);
 
-    // Start generation in background (non-blocking)
-    generateThesis(thesis as Thesis, user.id, supabase, isPremium).catch(console.error);
+    // In development, after() may not work reliably with Turbopack
+    // So we use a different approach for dev vs production
+    const isDev = process.env.NODE_ENV === 'development';
+    
+    if (isDev) {
+      // In dev, start generation without awaiting (fire and forget)
+      // This works because the dev server stays alive
+      console.log('🎬 Starting generation in dev mode (fire-and-forget)...');
+      generateThesis(thesis as Thesis, user.id, supabase, isPremium)
+        .then(() => console.log('🏁 Generation completed successfully'))
+        .catch((genError) => {
+          console.error('Generation error:', genError);
+          supabase
+            .from('theses')
+            .update({ status: 'failed' })
+            .eq('id', thesisId);
+        });
+    } else {
+      // In production, use after() to keep the function alive on Vercel
+      after(async () => {
+        console.log('🎬 after() callback starting...');
+        try {
+          await generateThesis(thesis as Thesis, user.id, supabase, isPremium);
+          console.log('🏁 after() callback completed successfully');
+        } catch (genError) {
+          console.error('Generation error:', genError);
+          await supabase
+            .from('theses')
+            .update({ status: 'failed' })
+            .eq('id', thesisId);
+        }
+      });
+    }
 
     return NextResponse.json({ 
       message: 'Generation started', 
@@ -101,6 +134,8 @@ function getWordCountTargets(targetLength: string | null) {
 }
 
 async function generateThesis(thesis: Thesis, userId: string, supabase: SupabaseClient, isPremium: boolean) {
+  console.log('🚀 Starting thesis generation for:', thesis.id, 'isPremium:', isPremium);
+  
   try {
     // Get word count targets based on target length
     const wordTargets = getWordCountTargets(thesis.target_length);
@@ -240,10 +275,12 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
     
     // Only generate content for non-locked chapters
     const chaptersToProcess = chapters.filter(c => c.status !== 'locked');
+    console.log('📝 Processing', chaptersToProcess.length, 'chapters (excluding locked)');
     
     // Process outline by outline across all chapters
     for (let i = 0; i < chaptersToProcess.length; i++) {
       const chapter = chaptersToProcess[i];
+      console.log('⏳ Starting chapter', i + 1, '/', chaptersToProcess.length, ':', chapter.title);
       
       // Parse subchapters from chapter content if available
       let subchaptersWithVisuals: OutlineVisual[] = [];
@@ -256,19 +293,30 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
             : chapter.content;
           
           // Check for visual outlines first
-          if (contentData?.subchaptersWithVisuals) {
-            subchaptersWithVisuals = contentData.subchaptersWithVisuals;
-            subchapters = subchaptersWithVisuals.map(s => s.title);
-          } else if (contentData?.subchapters) {
-            subchapters = contentData.subchapters;
+          if (contentData?.subchaptersWithVisuals && Array.isArray(contentData.subchaptersWithVisuals)) {
+            subchaptersWithVisuals = contentData.subchaptersWithVisuals.filter((s: OutlineVisual | null) => s && s.title);
+            subchapters = subchaptersWithVisuals.map(s => s.title).filter(Boolean);
+          } else if (contentData?.subchapters && Array.isArray(contentData.subchapters)) {
+            // Handle both string[] and object[] formats
+            subchapters = contentData.subchapters
+              .map((s: string | { title?: string } | null) => {
+                if (!s) return null;
+                if (typeof s === 'string') return s;
+                if (typeof s === 'object' && s.title) return s.title;
+                return null;
+              })
+              .filter(Boolean) as string[];
             // Convert to visual format without any visuals
             subchaptersWithVisuals = subchapters.map(title => ({ title }));
           }
         }
-      } catch {
+      } catch (parseError) {
+        console.error('Error parsing chapter content:', parseError);
         subchapters = [];
         subchaptersWithVisuals = [];
       }
+      
+      console.log('📋 Chapter', chapter.title, 'has', subchapters.length, 'outlines:', subchapters.slice(0, 3).join(', '), subchapters.length > 3 ? '...' : '');
       
       // Update chapter status to generating with initial outline index
       await supabase
@@ -317,13 +365,25 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
           );
           generatedContentTracker.push(content);
         } else if (chapter.title.toLowerCase().includes('reference')) {
-          // Generate references section
-          content = `## References\n\nThis section contains all academic sources, citations, and bibliography entries used throughout the thesis. References are formatted according to the appropriate academic citation style.\n\n*Note: References will be automatically populated based on the citations used in the thesis content.*`;
+          // Generate real academic references
+          console.log('📚 Generating references...');
+          const allChapterTitles = chapters.map(c => c.title);
+          content = await generateReferences(
+            `${thesis.title}: ${topicText}`,
+            allChapterTitles,
+            thesis.academic_field || 'General',
+            thesis.language || 'English',
+            'APA' // Default citation style
+          );
+          console.log('✅ References generated:', content.length, 'chars');
+          generatedContentTracker.push(content);
         } else {
           // Use subchapters as sections if available, otherwise use defaults
           const sections = subchapters.length > 0 
             ? subchapters 
             : ['Overview', 'Key Concepts', 'Analysis', 'Discussion', 'Summary'];
+          
+          console.log('📝 Generating', sections.length, 'sections for chapter:', chapter.title);
           
           const sectionContents: string[] = [];
           const sectionTables: Record<string, unknown>[] = [];
@@ -332,6 +392,7 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
           // OUTLINE-BY-OUTLINE GENERATION with context tracking
           for (let sectionIdx = 0; sectionIdx < sections.length; sectionIdx++) {
             const section = sections[sectionIdx];
+            console.log('  📄 Section', sectionIdx + 1, '/', sections.length, ':', section);
             const sectionVisuals = subchaptersWithVisuals[sectionIdx];
             
             // Update chapter to show current outline being generated
@@ -361,6 +422,8 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
               thesis.language || 'English',
               wordTargets.sectionWords
             );
+            
+            console.log('  ✅ Section generated:', section, '-', sectionContent.split(/\s+/).length, 'words');
             
             sectionContents.push(`## ${section}\n\n${sectionContent}`);
             generatedContentTracker.push(sectionContent);
@@ -410,37 +473,41 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
 
           content = sectionContents.join('\n\n');
 
-          // Store tables and charts generated per section
-          const finalContent = JSON.stringify({
+          const wordCount = content.split(/\s+/).length;
+          console.log('💾 Saving regular chapter:', chapter.title, 'with', wordCount, 'words');
+
+          // Store tables and charts in the content JSON since table doesn't have separate columns
+          const finalContentWithVisuals = JSON.stringify({
             subchapters: subchapters,
             subchaptersWithVisuals: subchaptersWithVisuals,
             text: content,
+            tables: sectionTables.length > 0 ? sectionTables : undefined,
+            charts: sectionCharts.length > 0 ? sectionCharts : undefined,
           });
 
-          const wordCount = content.split(/\s+/).length;
-
-          await supabase
+          const regularChapterResult = await supabase
             .from('chapters')
             .update({
               status: 'completed',
-              content: finalContent,
+              content: finalContentWithVisuals,
               word_count: wordCount,
-              tables: sectionTables.length > 0 ? sectionTables : null,
-              charts: sectionCharts.length > 0 ? sectionCharts : null,
             })
             .eq('id', chapter.id);
+          
+          console.log('💾 Regular chapter save result:', regularChapterResult.error ? regularChapterResult.error : 'success');
           
           continue; // Skip the rest for regular chapters
         }
 
         // For intro/conclusion/references (non-outline chapters)
         const wordCount = content.split(/\s+/).length;
+        console.log('💾 Saving chapter:', chapter.title, 'with', wordCount, 'words');
         const finalContent = JSON.stringify({
           subchapters: subchapters,
           text: content,
         });
 
-        await supabase
+        const updateResult = await supabase
           .from('chapters')
           .update({
             status: 'completed',
@@ -448,9 +515,11 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
             word_count: wordCount,
           })
           .eq('id', chapter.id);
+        
+        console.log('💾 Update result for', chapter.title, ':', updateResult.error ? updateResult.error : 'success');
 
       } catch (chapterError) {
-        console.error(`Error generating chapter ${chapter.title}:`, chapterError);
+        console.error(`❌ Error generating chapter ${chapter.title}:`, chapterError);
         // Continue with next chapter on error
         await supabase
           .from('chapters')
@@ -467,17 +536,21 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
 
     const totalWords = allChapters?.reduce((sum, c) => sum + (c.word_count || 0), 0) || 0;
     const completedCount = allChapters?.filter(c => c.status === 'completed').length || 0;
-    const hasAllCompleted = completedCount === allChapters?.length;
+    const lockedCount = allChapters?.filter(c => c.status === 'locked').length || 0;
+    // For free users, only check non-locked chapters are completed
+    const hasAllCompleted = completedCount === (allChapters?.length || 0) - lockedCount;
+    
+    console.log('📊 Generation complete - Total words:', totalWords, 'Completed:', completedCount, 'Locked:', lockedCount, 'All done:', hasAllCompleted);
 
     // Update thesis as completed
-    await supabase
+    const thesisUpdateResult = await supabase
       .from('theses')
       .update({
         status: hasAllCompleted ? 'completed' : 'draft',
-        total_words: totalWords,
-        total_pages: Math.ceil(totalWords / 250), // Approx 250 words per page
       })
       .eq('id', thesis.id);
+    
+    console.log('📝 Thesis status update to', hasAllCompleted ? 'completed' : 'draft', ':', thesisUpdateResult.error ? thesisUpdateResult.error : 'success');
 
     // Increment usage for billing
     if (hasAllCompleted) {

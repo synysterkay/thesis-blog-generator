@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Blog Post Generator Script for ThesisAI
+ * Blog Post Generator Script for Thesis Generator
  * Generates SEO-optimized MDX blog posts using DeepSeek API
  * with random Unsplash images
  * 
@@ -13,14 +13,16 @@
  *   - STYLE: Writing style (informative, tutorial, comparison, news)
  */
 
-import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 
-const deepseek = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: 'https://api.deepseek.com/v1',
-});
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+
+if (!DEEPSEEK_API_KEY) {
+  console.error('❌ DEEPSEEK_API_KEY environment variable is required');
+  process.exit(1);
+}
 
 const topic = process.env.TOPIC || 'Thesis Writing Tips';
 const keywords = process.env.KEYWORDS?.split(',').map((k) => k.trim()) || [];
@@ -89,18 +91,22 @@ const seoKeywords = {
     'thesis writing tool',
     'research paper generator',
     'AI academic writing',
+    'essay ai',
+    'write my dissertation ai',
+    'free thesis writer',
   ],
   secondary: [
     'how to write a thesis',
     'thesis writing tips',
     'dissertation help',
     'research methodology',
-    'literature review',
+    'literature review generator',
     'thesis structure',
     'academic writing guide',
     'thesis introduction',
     'thesis conclusion',
     'thesis defense',
+    'academic paper generator',
   ],
   longtail: [
     'how to write a thesis introduction',
@@ -111,6 +117,9 @@ const seoKeywords = {
     'thesis writing step by step guide',
     'how to write methodology chapter',
     'thesis literature review example',
+    'automatic thesis statement generator',
+    'ai for literature review',
+    'best dissertation writing services ai',
   ],
 };
 
@@ -128,7 +137,9 @@ async function generateBlogPost() {
         seoKeywords.longtail[Math.floor(Math.random() * seoKeywords.longtail.length)],
       ];
 
-  const prompt = `Generate a comprehensive, SEO-optimized blog post about "${topic}" for ThesisAI (https://thesisgenerator.io), an AI-powered thesis and dissertation writing tool.
+  const prompt = `Generate a comprehensive, SEO-optimized blog post about "${topic}" for Thesis Generator, an AI-powered thesis and dissertation writing tool.
+
+Website: https://www.thesisgenerator.io
 
 Style: ${style}
 Target keywords: ${selectedKeywords.join(', ')}
@@ -138,14 +149,15 @@ Requirements:
 2. Include practical tips, examples, and actionable advice
 3. Optimize for SEO with proper heading structure (H2, H3 only - no H1)
 4. Include a compelling introduction that hooks readers
-5. Add a strong conclusion with call-to-action mentioning ThesisAI
-6. Length: 1800-2500 words
+5. Add a strong conclusion with call-to-action linking to https://www.thesisgenerator.io
+6. Length: 2000-3000 words (high-quality, in-depth content)
 7. Include relevant statistics or research data where appropriate
 8. Naturally incorporate the keywords without keyword stuffing
-9. Add internal linking suggestions to other thesis-related topics
-10. Include FAQ section at the end with 3-4 common questions
+9. IMPORTANT: Include 2-3 natural mentions of Thesis Generator with direct links to https://www.thesisgenerator.io throughout the article
+10. Include FAQ section at the end with 4-5 common questions
 11. Make content helpful for graduate students, researchers, and academics
-12. Mention how AI tools like ThesisAI can help with the topic
+12. Add a "Try Thesis Generator Today" section near the end with link to https://www.thesisgenerator.io
+13. Use markdown link format: [Thesis Generator](https://www.thesisgenerator.io) or [Try Thesis Generator Free](https://www.thesisgenerator.io)
 
 Meta description requirements:
 - Max 155 characters
@@ -158,7 +170,7 @@ Output format (in JSON):
   "slug": "url-friendly-slug",
   "description": "Meta description (max 155 chars)",
   "excerpt": "Short excerpt for previews (100-150 chars)",
-  "author": "ThesisAI Research Team",
+  "author": "Thesis Generator Research Team",
   "category": "One of: Writing Tips, Research, Technology, Productivity, Guides",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
   "keywords": ["seo", "keyword", "list"],
@@ -168,24 +180,37 @@ Output format (in JSON):
 }`;
 
   try {
-    const response = await deepseek.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert academic content writer specializing in thesis writing, dissertation help, research methodology, and academic writing. You create engaging, well-researched, SEO-optimized blog posts that help students and researchers with their academic work. Your content is informative, practical, and always maintains academic integrity standards.`,
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 5000,
-      response_format: { type: 'json_object' },
+    const response = await fetch(DEEPSEEK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert academic content writer specializing in thesis writing, dissertation help, research methodology, and academic writing. You create engaging, well-researched, SEO-optimized blog posts that help students and researchers with their academic work. Your content is informative, practical, and always maintains academic integrity standards.`,
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 5000,
+        response_format: { type: 'json_object' },
+      }),
     });
 
-    const content = response.choices[0]?.message?.content;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
     if (!content) {
       throw new Error('No response from AI');
     }

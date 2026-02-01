@@ -76,7 +76,7 @@ export function Logo({ size = 'md', showText = true, className = '' }: LogoProps
       
       {showText && (
         <span className={`font-bold ${text} bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent`}>
-          ThesisAI
+          Thesis Generator
         </span>
       )}
     </div>

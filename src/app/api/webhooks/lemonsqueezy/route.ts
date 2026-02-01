@@ -8,6 +8,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Map variant IDs to plan types
+function getPlanTypeFromVariantId(variantId: string): 'monthly' | 'yearly' | 'lifetime' | null {
+  const monthlyVariantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID;
+  const yearlyVariantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_YEARLY_VARIANT_ID;
+  const lifetimeVariantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID;
+
+  if (variantId === monthlyVariantId) return 'monthly';
+  if (variantId === yearlyVariantId) return 'yearly';
+  if (variantId === lifetimeVariantId) return 'lifetime';
+  return null;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.text();
@@ -39,10 +51,16 @@ export async function POST(request: Request) {
         }
 
         const status = data.attributes.status;
-        const planId = data.attributes.variant_id?.toString();
+        const variantId = data.attributes.variant_id?.toString();
+        const planType = getPlanTypeFromVariantId(variantId);
         const currentPeriodEnd = data.attributes.renews_at 
           ? new Date(data.attributes.renews_at).toISOString()
           : null;
+        const currentPeriodStart = data.attributes.created_at
+          ? new Date(data.attributes.created_at).toISOString()
+          : new Date().toISOString();
+
+        console.log(`Subscription webhook: userId=${userId}, variantId=${variantId}, planType=${planType}, status=${status}`);
 
         // Upsert subscription
         const { error } = await supabase
@@ -51,9 +69,12 @@ export async function POST(request: Request) {
             user_id: userId,
             lemonsqueezy_subscription_id: data.id,
             lemonsqueezy_customer_id: data.attributes.customer_id?.toString(),
-            plan_id: planId,
+            plan_id: variantId,
+            plan_type: planType || 'monthly', // Default to monthly if unknown
             status: status === 'active' ? 'active' : status === 'cancelled' ? 'cancelled' : 'inactive',
+            current_period_start: currentPeriodStart,
             current_period_end: currentPeriodEnd,
+            cancel_at_period_end: data.attributes.cancelled || false,
             updated_at: new Date().toISOString(),
           }, {
             onConflict: 'user_id'
@@ -88,8 +109,11 @@ export async function POST(request: Request) {
         const userId = data.attributes.custom_data?.user_id;
         if (!userId) break;
 
-        const isLifetime = data.attributes.first_order_item?.variant_id?.toString() === process.env.LEMONSQUEEZY_LIFETIME_VARIANT_ID;
+        const variantId = data.attributes.first_order_item?.variant_id?.toString();
+        const isLifetime = variantId === process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID;
         
+        console.log(`Order webhook: userId=${userId}, variantId=${variantId}, isLifetime=${isLifetime}`);
+
         if (isLifetime) {
           const { error } = await supabase
             .from('subscriptions')
@@ -97,9 +121,12 @@ export async function POST(request: Request) {
               user_id: userId,
               lemonsqueezy_subscription_id: `lifetime-${data.id}`,
               lemonsqueezy_customer_id: data.attributes.customer_id?.toString(),
-              plan_id: 'lifetime',
+              plan_id: variantId,
+              plan_type: 'lifetime',
               status: 'active',
+              current_period_start: new Date().toISOString(),
               current_period_end: null, // Lifetime has no end
+              cancel_at_period_end: false,
               updated_at: new Date().toISOString(),
             }, {
               onConflict: 'user_id'

@@ -141,3 +141,40 @@ CREATE INDEX idx_theses_user_id ON public.theses(user_id);
 CREATE INDEX idx_theses_status ON public.theses(status);
 CREATE INDEX idx_subscriptions_user_id ON public.subscriptions(user_id);
 CREATE INDEX idx_usage_user_month ON public.usage(user_id, month_year);
+
+-- Exports table for background export jobs
+CREATE TABLE public.exports (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  thesis_id UUID REFERENCES public.theses(id) ON DELETE CASCADE NOT NULL,
+  thesis_title TEXT NOT NULL,
+  format TEXT NOT NULL CHECK (format IN ('pdf', 'docx', 'latex', 'markdown')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  file_path TEXT,
+  file_size INTEGER,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.exports ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own exports" ON public.exports
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own exports" ON public.exports
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own exports" ON public.exports
+  FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can update exports" ON public.exports
+  FOR UPDATE USING (true);
+
+CREATE TRIGGER update_exports_updated_at
+  BEFORE UPDATE ON public.exports
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+CREATE INDEX idx_exports_user_id ON public.exports(user_id);
+CREATE INDEX idx_exports_status ON public.exports(status);
+CREATE INDEX idx_exports_created_at ON public.exports(created_at DESC);

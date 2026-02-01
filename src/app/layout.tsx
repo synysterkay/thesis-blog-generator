@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/providers/auth-provider";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -24,13 +25,20 @@ export const metadata: Metadata = {
     "dissertation generator",
     "research paper writer",
     "AI academic assistant",
+    "essay ai",
+    "write my dissertation ai",
+    "free thesis writer",
+    "literature review generator",
+    "thesis statement generator",
+    "academic paper generator",
+    "dissertation writing ai",
   ],
   authors: [{ name: "Thesis Generator" }],
   creator: "Thesis Generator",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://thesisai.io",
+    url: "https://www.thesisgenerator.io",
     title: "Thesis Generator - Generate Complete Academic Theses with AI",
     description: "Create 90+ page research papers with proper structure, auto-generated tables & charts, and human-like academic writing.",
     siteName: "Thesis Generator",
@@ -61,9 +69,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
+    icon: "/favicon.svg",
+    shortcut: "/favicon-16x16.svg",
+    apple: "/apple-touch-icon.svg",
   },
   manifest: "/site.webmanifest",
 };
@@ -73,8 +81,50 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Thesis Generator",
+    "alternateName": "Thesis Generator",
+    "url": "https://www.thesisgenerator.io",
+    "logo": "https://www.thesisgenerator.io/logo.png",
+    "description": "AI-powered thesis and dissertation generator for graduate students and researchers",
+    "sameAs": [
+      "https://twitter.com/thesisgenerator"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer support",
+      "url": "https://www.thesisgenerator.io/support"
+    }
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Thesis Generator - AI Thesis Generator",
+    "url": "https://www.thesisgenerator.io",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://www.thesisgenerator.io/blog?search={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
+      <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+      </head>
       <body className={`${inter.variable} font-sans`}>
         <AuthProvider>
           {children}
@@ -88,6 +138,7 @@ export default function RootLayout({
               },
             }}
           />
+          <Analytics />
         </AuthProvider>
       </body>
     </html>

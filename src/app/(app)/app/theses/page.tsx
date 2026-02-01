@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { motion } from 'framer-motion';
 import { 
   Plus, 
   FileText, 
@@ -19,7 +20,9 @@ import {
   Loader2,
   Trash2,
   MoreVertical,
-  Play
+  Play,
+  Library,
+  Sparkles
 } from 'lucide-react';
 import { Thesis } from '@/types';
 import { toast } from 'sonner';
@@ -31,6 +34,7 @@ export default function ThesesPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<string>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [chapterCounts, setChapterCounts] = useState<Record<string, number>>({});
   const supabase = createClient();
 
   useEffect(() => {
@@ -44,6 +48,20 @@ export default function ThesesPage() {
         .order('updated_at', { ascending: false });
 
       setTheses(data || []);
+      
+      // Fetch actual chapter counts for each thesis
+      if (data && data.length > 0) {
+        const counts: Record<string, number> = {};
+        for (const thesis of data) {
+          const { count } = await supabase
+            .from('chapters')
+            .select('*', { count: 'exact', head: true })
+            .eq('thesis_id', thesis.id);
+          counts[thesis.id] = count || 0;
+        }
+        setChapterCounts(counts);
+      }
+      
       setLoading(false);
     };
 
@@ -119,40 +137,62 @@ export default function ThesesPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="relative min-h-screen max-w-6xl mx-auto">
+      {/* Subtle Background Effects */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-1/4 w-48 h-48 bg-purple-400/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/4 w-32 h-32 bg-blue-400/5 rounded-full blur-3xl" />
+      </div>
+
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">My Theses</h1>
-          <p className="text-slate-600">Manage and continue your thesis projects</p>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-violet-500/20">
+            <Library className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-slate-900">
+              My Library
+            </h1>
+            <p className="text-sm text-slate-500">{filteredTheses.length} project{filteredTheses.length !== 1 ? 's' : ''}</p>
+          </div>
         </div>
         <Link href="/app/new">
-          <Button>
-            <Plus className="mr-2 w-4 h-4" />
+          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-sm h-9">
+            <Plus className="mr-1.5 w-3.5 h-3.5" />
             New Thesis
           </Button>
         </Link>
-      </div>
+      </motion.div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="flex flex-col sm:flex-row gap-3 mb-6"
+      >
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <Input
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search theses..."
-            className="pl-10"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-white border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 flex-wrap">
           {['all', 'draft', 'generating', 'completed'].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 filter === status
-                  ? 'bg-blue-100 text-blue-700'
+                  ? 'bg-blue-600 text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -160,109 +200,126 @@ export default function ThesesPage() {
             </button>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Theses List */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-48 bg-slate-100 rounded-xl animate-pulse" />
+            <div key={i} className="h-40 bg-slate-100 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : filteredTheses.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-8 h-8 text-slate-400" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-xl p-8 bg-slate-50 border border-slate-200 text-center"
+        >
+          <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+            <FileText className="w-6 h-6 text-slate-400" />
           </div>
-          <h3 className="font-semibold text-slate-900 mb-2">
+          <h3 className="text-sm font-semibold text-slate-900 mb-1">
             {search || filter !== 'all' ? 'No matching theses' : 'No theses yet'}
           </h3>
-          <p className="text-slate-600 mb-4">
+          <p className="text-xs text-slate-500 mb-4 max-w-xs mx-auto">
             {search || filter !== 'all' 
               ? 'Try adjusting your search or filters'
-              : 'Create your first thesis to get started'
+              : 'Create your first AI-powered thesis'
             }
           </p>
           {!search && filter === 'all' && (
             <Link href="/app/new">
-              <Button>
-                <Plus className="mr-2 w-4 h-4" />
+              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="mr-1.5 w-3.5 h-3.5" />
                 Create Thesis
               </Button>
             </Link>
           )}
-        </Card>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTheses.map((thesis) => (
-            <Link key={thesis.id} href={`/app/thesis/${thesis.id}`}>
-              <Card hover className="p-5 h-full flex flex-col group relative">
-                {/* Delete button */}
-                <button
-                  onClick={(e) => deleteThesis(e, thesis.id)}
-                  disabled={deletingId === thesis.id}
-                  className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all z-10"
-                >
-                  {deletingId === thesis.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4" />
-                  )}
-                </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filteredTheses.map((thesis, index) => (
+            <motion.div
+              key={thesis.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03 }}
+            >
+              <Link href={`/app/thesis/${thesis.id}`}>
+                <div className="group relative rounded-xl p-4 bg-white border border-slate-200 hover:border-blue-200 hover:shadow-md transition-all duration-200 h-full flex flex-col">
+                  {/* Delete button */}
+                  <button
+                    onClick={(e) => deleteThesis(e, thesis.id)}
+                    disabled={deletingId === thesis.id}
+                    className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all z-10"
+                  >
+                    {deletingId === thesis.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                  </button>
 
-                <div className="flex items-start justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    thesis.status === 'completed' ? 'bg-green-100' :
-                    thesis.status === 'generating' ? 'bg-blue-100' :
-                    thesis.status === 'exported' ? 'bg-purple-100' :
-                    'bg-slate-100'
-                  }`}>
-                    <FileText className={`w-5 h-5 ${
-                      thesis.status === 'completed' ? 'text-green-600' :
-                      thesis.status === 'generating' ? 'text-blue-600' :
-                      thesis.status === 'exported' ? 'text-purple-600' :
-                      'text-slate-600'
-                    }`} />
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                      thesis.status === 'completed' 
+                        ? 'bg-emerald-100 text-emerald-600' 
+                        : thesis.status === 'generating' 
+                        ? 'bg-blue-100 text-blue-600' 
+                        : thesis.status === 'exported' 
+                        ? 'bg-violet-100 text-violet-600'
+                        : 'bg-amber-100 text-amber-600'
+                    }`}>
+                      {thesis.status === 'generating' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <FileText className="w-4 h-4" />
+                      )}
+                    </div>
+                    <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
+                      thesis.status === 'completed' 
+                        ? 'bg-emerald-50 text-emerald-600' 
+                        : thesis.status === 'generating' 
+                        ? 'bg-blue-50 text-blue-600' 
+                        : thesis.status === 'exported' 
+                        ? 'bg-violet-50 text-violet-600'
+                        : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      {statusIcon(thesis.status)}
+                      {thesis.status.charAt(0).toUpperCase() + thesis.status.slice(1)}
+                    </span>
                   </div>
-                  <span className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
-                    thesis.status === 'completed' ? 'bg-green-100 text-green-700' :
-                    thesis.status === 'generating' ? 'bg-blue-100 text-blue-700' :
-                    thesis.status === 'exported' ? 'bg-purple-100 text-purple-700' :
-                    'bg-slate-100 text-slate-700'
-                  }`}>
-                    {statusIcon(thesis.status)}
-                    {thesis.status.charAt(0).toUpperCase() + thesis.status.slice(1)}
-                  </span>
+                  
+                  <h3 className="text-sm font-medium text-slate-900 mb-1.5 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                    {thesis.title}
+                  </h3>
+                  
+                  <p className="text-xs text-slate-500 mb-3 line-clamp-1 flex-1">
+                    {thesis.topic || `${thesis.academic_field || 'General'} • ${thesis.writing_style || 'Academic'}`}
+                  </p>
+                  
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-400">
+                      {new Date(thesis.updated_at).toLocaleDateString()}
+                    </span>
+                    {thesis.status === 'draft' ? (
+                      <span className="text-[10px] text-amber-600 font-medium flex items-center gap-1">
+                        <Play className="w-2.5 h-2.5" /> Continue
+                      </span>
+                    ) : thesis.status === 'generating' ? (
+                      <span className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> In Progress
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        {chapterCounts[thesis.id] ?? thesis.total_chapters ?? 0} chapters
+                      </span>
+                    )}
+                  </div>
                 </div>
-                
-                <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2">
-                  {thesis.title}
-                </h3>
-                
-                <p className="text-sm text-slate-500 mb-4 line-clamp-2">
-                  {thesis.topic || `${thesis.academic_field || 'General'} • ${thesis.writing_style || 'Academic'}`}
-                </p>
-                
-                <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs text-slate-500">
-                    {new Date(thesis.updated_at).toLocaleDateString()}
-                  </span>
-                  {thesis.status === 'draft' ? (
-                    <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
-                      <Play className="w-3 h-3" /> Continue
-                    </span>
-                  ) : thesis.status === 'generating' ? (
-                    <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
-                      <Loader2 className="w-3 h-3 animate-spin" /> In Progress
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-500">
-                      {thesis.total_chapters || 0} chapters
-                    </span>
-                  )}
-                </div>
-              </Card>
-            </Link>
+              </Link>
+            </motion.div>
           ))}
         </div>
       )}

@@ -150,4 +150,4 @@ MIT License - feel free to use this for your own projects!
 
 ## Support
 
-For questions or issues, please open a GitHub issue or contact support@thesisai.io
+For questions or issues, please open a GitHub issue or contact support@thesisgenerator.io

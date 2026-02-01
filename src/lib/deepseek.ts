@@ -574,3 +574,159 @@ export function isNonDataChapter(chapterTitle: string): boolean {
     title.includes('foreword')
   );
 }
+
+// Generate academic references
+export async function generateReferences(
+  topic: string,
+  chapterTitles: string[],
+  academicField: string,
+  language: string = 'English',
+  citationStyle: string = 'APA'
+): Promise<string> {
+  const messages: DeepSeekMessage[] = [
+    { 
+      role: 'system', 
+      content: `You are an academic librarian and research expert. Generate realistic academic references that could plausibly exist for the given thesis topic. Use ${citationStyle} citation format.` 
+    },
+    {
+      role: 'user',
+      content: `
+Generate a comprehensive references section for an academic thesis. Write in ${language}.
+
+Thesis Topic: ${topic}
+Academic Field: ${academicField}
+Chapters covered: ${chapterTitles.join(', ')}
+
+Generate 15-25 realistic academic references that would support this thesis, including:
+
+1. **Foundational Works** (4-6 references)
+   - Seminal texts and influential books in the field
+   - Classic journal articles that established key concepts
+   
+2. **Recent Research** (6-10 references)
+   - Recent peer-reviewed journal articles (2019-2024)
+   - Contemporary studies addressing current issues in the field
+   
+3. **Methodological Sources** (2-4 references)
+   - Research methodology books or articles
+   - Statistical or qualitative analysis guides
+   
+4. **Supporting Materials** (3-5 references)
+   - Government reports, white papers, or official documents
+   - Industry reports or organizational publications
+   - Conference proceedings
+
+Format each reference correctly in ${citationStyle} style. Include:
+- Author names (realistic academic names)
+- Publication year
+- Article/book titles relevant to the topic
+- Journal names (use real academic journals in the field)
+- Volume, issue, page numbers (for articles)
+- Publisher information (for books)
+- DOIs where appropriate (formatted as https://doi.org/...)
+
+Organize references alphabetically by author's last name.
+Begin with "## References" heading.
+      `.trim(),
+    },
+  ];
+
+  return callDeepSeek(messages, { max_tokens: 4096, temperature: 0.7 });
+}
+
+// Generate academic footnotes for a chapter
+export async function generateFootnotes(
+  chapterTitle: string,
+  chapterContent: string,
+  academicField: string,
+  language: string = 'English'
+): Promise<{
+  footnotes: {
+    marker: string;
+    source: string;
+    page?: string;
+  }[];
+}> {
+  const messages: DeepSeekMessage[] = [
+    { 
+      role: 'system', 
+      content: 'You are an academic research expert creating scholarly footnotes with proper citations. Return ONLY valid JSON.' 
+    },
+    {
+      role: 'user',
+      content: `
+Generate academic footnotes for this thesis chapter. Analyze the content and create relevant scholarly citations.
+
+Chapter Title: "${chapterTitle}"
+Academic Field: ${academicField}
+Language: ${language}
+
+Chapter Content Preview:
+${chapterContent.slice(0, 2000)}...
+
+Task: Generate 2-4 realistic academic footnotes that would support key claims in this chapter.
+
+Each footnote should:
+1. Reference a real or realistic academic source (book, journal article, or study)
+2. Include proper author names (First Initial. Surname format)
+3. Include publication title, publisher/journal, year, and page number
+4. Be relevant to the chapter's academic content
+5. Follow academic citation conventions
+
+Return ONLY valid JSON with this exact structure:
+{
+  "footnotes": [
+    {
+      "marker": "Brief description of what this footnote references (3-6 words)",
+      "source": "A. Surname, B. Author, Full Publication Title, Publisher/Journal Name, Year, vol. X(X), p. XX.",
+      "page": "45"
+    },
+    {
+      "marker": "Another key concept referenced",
+      "source": "C. Scholar, Book or Article Title, Publisher, Year, p. XX.",
+      "page": "128"
+    }
+  ]
+}
+
+Make sources academically credible and appropriate for ${academicField}. Use realistic author names, well-known publishers, and established journals in the field.
+      `.trim(),
+    },
+  ];
+
+  const response = await callDeepSeek(messages, { temperature: 0.6, max_tokens: 1024 });
+  
+  // Extract JSON from response
+  const jsonMatch = response.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    // Return default footnotes if parsing fails
+    return {
+      footnotes: [
+        {
+          marker: "Foundational theory",
+          source: `J. Creswell, Research Design: Qualitative and Quantitative Approaches, Sage Publications, 2014, p. 89.`,
+          page: "89"
+        },
+        {
+          marker: "Methodological framework",
+          source: `R. Yin, Case Study Research: Design and Methods, Sage Publications, 2014, p. 45.`,
+          page: "45"
+        }
+      ]
+    };
+  }
+  
+  try {
+    return JSON.parse(jsonMatch[0]);
+  } catch {
+    return {
+      footnotes: [
+        {
+          marker: "Academic reference",
+          source: `A. Osterwalder, Y. Pigneur, Business Model Generation, John Wiley and Sons, 2010, p. 14.`,
+          page: "14"
+        }
+      ]
+    };
+  }
+}
