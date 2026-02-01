@@ -1,5 +1,33 @@
 [
   {
+    "slug": "thesis-writing-tips-essential-guide",
+    "title": "Master Thesis Writing: 15 Essential Tips for Academic Success",
+    "excerpt": "Struggling with your thesis? Our comprehensive guide provides 15 essential tips for successful thesis writing, from planning to final submission.",
+    "description": "Discover 15 proven thesis writing tips to streamline your research process. Learn practical strategies for structure, research, and time management.",
+    "date": "2026-02-01",
+    "publishedAt": "2026-02-01T14:11:59.952Z",
+    "author": "Thesis Generator Research Team",
+    "category": "Guides",
+    "tags": [
+      "thesis writing",
+      "academic writing",
+      "research methodology",
+      "dissertation help",
+      "graduate studies"
+    ],
+    "keywords": [
+      "thesis writing tips",
+      "dissertation writing",
+      "academic research",
+      "graduate thesis",
+      "research methodology"
+    ],
+    "image": "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80",
+    "readTime": "12 min read",
+    "featured": false,
+    "filename": "2026-02-01-thesis-writing-tips-essential-guide.mdx"
+  },
+  {
     "slug": "thesis-writing-tips-expert-guide",
     "title": "Master Thesis Writing: Expert Tips for Academic Success",
     "excerpt": "Comprehensive guide with actionable thesis writing tips for graduate students. Learn structuring, research methods, and writing strategies for academic success.",
@@ -28,34 +56,6 @@
     "filename": "2026-02-01-thesis-writing-tips-expert-guide.mdx"
   },
   {
-    "slug": "best-dissertation-research-methods-2026",
-    "title": "Best Dissertation Research Methods for 2026: A Complete Guide",
-    "excerpt": "Master your dissertation with cutting-edge research methods for 2026. Learn practical strategies, AI tools, and expert tips to elevate your academic work.",
-    "description": "Discover the most effective dissertation research methods for 2026 with practical tips, examples, and AI-powered tools to streamline your thesis writing process.",
-    "date": "2026-01-31",
-    "publishedAt": "2026-01-31T05:33:35.978Z",
-    "author": "ThesisAI Research Team",
-    "category": "Research",
-    "tags": [
-      "dissertation research",
-      "research methodology",
-      "thesis methods",
-      "academic writing",
-      "graduate studies"
-    ],
-    "keywords": [
-      "dissertation research",
-      "research methodology",
-      "thesis methods",
-      "academic research",
-      "graduate research"
-    ],
-    "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80",
-    "readTime": "12 min read",
-    "featured": false,
-    "filename": "2026-01-31-best-dissertation-research-methods-2026.mdx"
-  },
-  {
     "slug": "thesis-writing-tips-guide-strategies",
     "title": "Master Thesis Writing: Expert Tips for Academic Success",
     "excerpt": "Comprehensive guide with actionable thesis writing tips for graduate students. Learn structure, research methods, and writing strategies for academic success.",
@@ -82,5 +82,33 @@
     "readTime": "12 min read",
     "featured": false,
     "filename": "2026-01-31-thesis-writing-tips-expert-guide.mdx"
+  },
+  {
+    "slug": "best-dissertation-research-methods-2026",
+    "title": "Best Dissertation Research Methods for 2026: A Complete Guide",
+    "excerpt": "Master your dissertation with cutting-edge research methods for 2026. Learn practical strategies, AI tools, and expert tips to elevate your academic work.",
+    "description": "Discover the most effective dissertation research methods for 2026 with practical tips, examples, and AI-powered tools to streamline your thesis writing process.",
+    "date": "2026-01-31",
+    "publishedAt": "2026-01-31T05:33:35.978Z",
+    "author": "ThesisAI Research Team",
+    "category": "Research",
+    "tags": [
+      "dissertation research",
+      "research methodology",
+      "thesis methods",
+      "academic writing",
+      "graduate studies"
+    ],
+    "keywords": [
+      "dissertation research",
+      "research methodology",
+      "thesis methods",
+      "academic research",
+      "graduate research"
+    ],
+    "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80",
+    "readTime": "12 min read",
+    "featured": false,
+    "filename": "2026-01-31-best-dissertation-research-methods-2026.mdx"
   }
 ]
