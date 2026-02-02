@@ -53,29 +53,29 @@ jobs:
           STYLE: ${{ inputs.style || 'informative' }}
         run: npm run generate-blog
 
-      - name: Checkout thesispost repo
+      - name: Checkout thesis-blog-generator repo
         uses: actions/checkout@v4
         with:
-          repository: synysterkay/thesispost
+          repository: synysterkay/thesis-blog-generator
           token: ${{ secrets.GH_PAT }}
-          path: thesispost-repo
+          path: blog-repo
 
-      - name: Copy generated posts to thesispost repo
+      - name: Copy generated posts to blog repo
         run: |
           # Create posts directory if it doesn't exist
-          mkdir -p thesispost-repo/posts
+          mkdir -p blog-repo/posts
           
           # Copy generated MDX files
           if [ -d "generated-posts" ]; then
-            cp generated-posts/*.mdx thesispost-repo/posts/ 2>/dev/null || true
+            cp generated-posts/*.mdx blog-repo/posts/ 2>/dev/null || true
             
             # Merge index.json files
             if [ -f "generated-posts/index.json" ]; then
-              if [ -f "thesispost-repo/posts/index.json" ]; then
+              if [ -f "blog-repo/posts/index.json" ]; then
                 # Merge existing and new posts
                 node -e "
                   const fs = require('fs');
-                  const existing = JSON.parse(fs.readFileSync('thesispost-repo/posts/index.json', 'utf8'));
+                  const existing = JSON.parse(fs.readFileSync('blog-repo/posts/index.json', 'utf8'));
                   const newPosts = JSON.parse(fs.readFileSync('generated-posts/index.json', 'utf8'));
                   
                   // Merge and dedupe by slug
@@ -89,17 +89,17 @@ jobs:
                   // Sort by date descending
                   merged.sort((a, b) => new Date(b.publishedAt || b.date) - new Date(a.publishedAt || a.date));
                   
-                  fs.writeFileSync('thesispost-repo/posts/index.json', JSON.stringify(merged, null, 2));
+                  fs.writeFileSync('blog-repo/posts/index.json', JSON.stringify(merged, null, 2));
                 "
               else
-                cp generated-posts/index.json thesispost-repo/posts/
+                cp generated-posts/index.json blog-repo/posts/
               fi
             fi
           fi
 
-      - name: Commit and push to thesispost
+      - name: Commit and push to thesis-blog-generator
         run: |
-          cd thesispost-repo
+          cd blog-repo
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
           git add .
@@ -127,4 +127,4 @@ jobs:
           echo "- ✅ Proper heading structure (H2, H3)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ FAQ section included" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The post has been pushed to [thesispost](https://github.com/synysterkay/thesispost) repository." >> $GITHUB_STEP_SUMMARY
+          echo "The post has been pushed to [thesis-blog-generator](https://github.com/synysterkay/thesis-blog-generator) repository." >> $GITHUB_STEP_SUMMARY
