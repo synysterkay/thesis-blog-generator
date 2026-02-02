@@ -8,7 +8,7 @@
  * Usage: npm run generate-blog
  * Environment variables:
  *   - DEEPSEEK_API_KEY: DeepSeek API key
- *   - TOPIC: Blog post topic
+ *   - TOPIC: Blog post topic (optional - will pick random if not provided)
  *   - KEYWORDS: Comma-separated SEO keywords
  *   - STYLE: Writing style (informative, tutorial, comparison, news)
  */
@@ -24,41 +24,72 @@ if (!DEEPSEEK_API_KEY) {
   process.exit(1);
 }
 
-const topic = process.env.TOPIC || 'Thesis Writing Tips';
-const keywords = process.env.KEYWORDS?.split(',').map((k) => k.trim()) || [];
+// Diverse topic pool for scheduled posts - ensures variety
+const topicPool = [
+  'How to Write a Thesis Introduction That Captivates Readers',
+  'Literature Review Writing: A Complete Guide for Graduate Students',
+  'Research Methodology: Choosing the Right Approach for Your Thesis',
+  'How to Structure Your Dissertation for Maximum Impact',
+  'Thesis Defense Tips: How to Prepare and Succeed',
+  'Writing Your Thesis Conclusion: Best Practices',
+  'Time Management Strategies for Thesis Writing',
+  'Common Thesis Writing Mistakes and How to Avoid Them',
+  'How to Write a Strong Thesis Statement',
+  'Qualitative vs Quantitative Research Methods Explained',
+  'How to Conduct a Systematic Literature Review',
+  'Thesis Formatting Guidelines: APA, MLA, and Chicago Styles',
+  'How to Overcome Writers Block During Thesis Writing',
+  'Best AI Tools for Academic Writing in 2025',
+  'How to Find and Cite Academic Sources Properly',
+  'Writing Your Thesis Abstract: Tips and Examples',
+  'How to Create Effective Tables and Figures for Your Thesis',
+  'The Complete Guide to Thesis Acknowledgements',
+  'How to Write a Research Proposal for Your Thesis',
+  'Data Analysis Techniques for Thesis Research',
+  'How to Choose a Thesis Topic That Stands Out',
+  'Working with Your Thesis Supervisor: Communication Tips',
+  'Plagiarism Prevention: How to Cite Sources Correctly',
+  'How to Write the Methodology Chapter of Your Thesis',
+  'Thesis Editing and Proofreading: A Comprehensive Checklist',
+  'How to Present Research Findings Effectively',
+  'Building a Strong Theoretical Framework for Your Thesis',
+  'Tips for Writing a Compelling Research Background',
+  'How to Handle Thesis Revisions from Your Committee',
+  'Balancing Work and Thesis Writing: Practical Strategies',
+];
+
+// Get a random topic to ensure variety
+function getRandomTopic(): string {
+  const index = Math.floor(Math.random() * topicPool.length);
+  return topicPool[index];
+}
+
+const topic = process.env.TOPIC || getRandomTopic();
+const keywords = process.env.KEYWORDS?.split(',').map((k) => k.trim()).filter(k => k) || [];
 const style = process.env.STYLE || 'informative';
 
 // Curated Unsplash images for thesis/academic content
 const blogImages = [
-  // Academic/Research
   'https://images.unsplash.com/photo-1456324463128-7ff6903988d8?w=800&q=80',
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
   'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=800&q=80',
   'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80',
   'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800&q=80',
-  
-  // Writing/Typing
   'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&q=80',
   'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80',
   'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80',
   'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80',
   'https://images.unsplash.com/photo-1456324504439-367cee3b3c32?w=800&q=80',
-  
-  // Graduation/Academia
   'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80',
   'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80',
   'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=800&q=80',
   'https://images.unsplash.com/photo-1562774053-701939374585?w=800&q=80',
   'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&q=80',
-  
-  // AI/Technology
   'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80',
   'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=80',
   'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=800&q=80',
   'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80',
   'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&q=80',
-  
-  // Research/Data
   'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
   'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
   'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=800&q=80',
@@ -91,9 +122,6 @@ const seoKeywords = {
     'thesis writing tool',
     'research paper generator',
     'AI academic writing',
-    'essay ai',
-    'write my dissertation ai',
-    'free thesis writer',
   ],
   secondary: [
     'how to write a thesis',
@@ -105,21 +133,16 @@ const seoKeywords = {
     'academic writing guide',
     'thesis introduction',
     'thesis conclusion',
-    'thesis defense',
-    'academic paper generator',
   ],
   longtail: [
     'how to write a thesis introduction',
-    'best AI thesis generator 2026',
+    'best AI thesis generator 2025',
     'thesis writing software free',
     'how to structure a dissertation',
     'AI tools for academic writing',
     'thesis writing step by step guide',
     'how to write methodology chapter',
     'thesis literature review example',
-    'automatic thesis statement generator',
-    'ai for literature review',
-    'best dissertation writing services ai',
   ],
 };
 
@@ -128,7 +151,6 @@ async function generateBlogPost() {
   console.log(`📝 Style: ${style}`);
   console.log(`🔑 Keywords: ${keywords.length > 0 ? keywords.join(', ') : 'Auto-generated'}`);
 
-  // Select relevant SEO keywords if none provided
   const selectedKeywords = keywords.length > 0 
     ? keywords 
     : [
@@ -157,7 +179,7 @@ Requirements:
 10. Include FAQ section at the end with 4-5 common questions
 11. Make content helpful for graduate students, researchers, and academics
 12. Add a "Try Thesis Generator Today" section near the end with link to https://www.thesisgenerator.io
-13. Use markdown link format: [Thesis Generator](https://www.thesisgenerator.io) or [Try Thesis Generator Free](https://www.thesisgenerator.io)
+13. Use markdown link format: [Thesis Generator](https://www.thesisgenerator.io)
 
 Meta description requirements:
 - Max 155 characters
@@ -191,7 +213,7 @@ Output format (in JSON):
         messages: [
           {
             role: 'system',
-            content: `You are an expert academic content writer specializing in thesis writing, dissertation help, research methodology, and academic writing. You create engaging, well-researched, SEO-optimized blog posts that help students and researchers with their academic work. Your content is informative, practical, and always maintains academic integrity standards.`,
+            content: 'You are an expert academic content writer specializing in thesis writing, dissertation help, research methodology, and academic writing. You create engaging, well-researched, SEO-optimized blog posts that help students and researchers with their academic work.',
           },
           {
             role: 'user',
@@ -221,7 +243,6 @@ Output format (in JSON):
     const slug = blogData.slug || generateSlug(blogData.title);
     const filename = `${date}-${slug}.mdx`;
 
-    // Create MDX content with frontmatter
     const mdxContent = `---
 title: "${blogData.title}"
 description: "${blogData.description}"
@@ -242,17 +263,14 @@ filename: "${filename}"
 ${blogData.content}
 `;
 
-    // Ensure output directory exists
     const outputDir = path.join(process.cwd(), 'generated-posts');
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    // Write the MDX file
     const filepath = path.join(outputDir, filename);
     fs.writeFileSync(filepath, mdxContent, 'utf-8');
 
-    // Also create/update index.json for the GitHub repo
     const indexPath = path.join(outputDir, 'index.json');
     let posts: Array<Record<string, unknown>> = [];
     
@@ -260,7 +278,6 @@ ${blogData.content}
       posts = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
     }
 
-    // Add new post to the beginning
     const newPost = {
       slug,
       title: blogData.title,
@@ -278,7 +295,6 @@ ${blogData.content}
       filename,
     };
 
-    // Remove duplicate if exists
     posts = posts.filter((p) => p.slug !== slug);
     posts.unshift(newPost);
 
@@ -290,13 +306,6 @@ ${blogData.content}
     console.log(`🔗 Slug: ${slug}`);
     console.log(`🖼️  Image: ${randomImage}`);
     console.log(`🏷️  Tags: ${blogData.tags.join(', ')}`);
-    console.log(`🔑 Keywords: ${(blogData.keywords || selectedKeywords).join(', ')}`);
-    console.log(`📂 Category: ${blogData.category}`);
-    console.log(`⏱️  Read Time: ${blogData.readTime}`);
-    console.log('\n📋 Next steps:');
-    console.log('1. Review the generated content');
-    console.log('2. Copy files to your thesispost GitHub repository');
-    console.log('3. Push to trigger the blog update');
 
     return filepath;
   } catch (error) {
