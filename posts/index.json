@@ -1,5 +1,33 @@
 [
   {
+    "slug": "apa-vs-mla-vs-chicago-citation-styles-explained",
+    "title": "APA vs MLA vs Chicago: Complete Citation Style Guide for Researchers",
+    "excerpt": "Navigate the complexities of APA, MLA, and Chicago citation styles with this detailed comparison guide. Perfect for graduate students and researchers.",
+    "description": "Master APA, MLA, and Chicago citation styles with our comprehensive guide. Learn when to use each format with practical examples for academic success.",
+    "date": "2026-02-03",
+    "publishedAt": "2026-02-03T08:12:34.397Z",
+    "author": "Thesis Generator Research Team",
+    "category": "Guides",
+    "tags": [
+      "citation styles",
+      "academic writing",
+      "research methodology",
+      "thesis writing",
+      "dissertation help"
+    ],
+    "keywords": [
+      "APA citation",
+      "MLA format",
+      "Chicago style",
+      "academic citations",
+      "research writing"
+    ],
+    "image": "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&q=80",
+    "readTime": "12 min read",
+    "featured": false,
+    "filename": "2026-02-03-apa-vs-mla-vs-chicago-citation-styles-explained.mdx"
+  },
+  {
     "slug": "digital-tools-organizing-research-thesis-2026",
     "title": "Master Your Research: Top Digital Tools for Academic Organization in 2026",
     "excerpt": "Learn how to streamline your research workflow with cutting-edge digital tools. From AI thesis generators to citation managers, transform your academic process.",
@@ -8,8 +36,20 @@
     "publishedAt": "2026-02-02T15:59:44.518Z",
     "author": "Thesis Generator Research Team",
     "category": "Technology",
-    "tags": ["research organization", "academic tools", "thesis writing", "AI research", "productivity"],
-    "keywords": ["research paper generator", "thesis writing tips", "best AI thesis generator 2026", "digital research tools", "academic organization"],
+    "tags": [
+      "research organization",
+      "academic tools",
+      "thesis writing",
+      "AI research",
+      "productivity"
+    ],
+    "keywords": [
+      "research paper generator",
+      "thesis writing tips",
+      "best AI thesis generator 2026",
+      "digital research tools",
+      "academic organization"
+    ],
     "image": "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80",
     "readTime": "12 min read",
     "featured": true,
@@ -24,8 +64,20 @@
     "publishedAt": "2026-02-02T14:22:17.648Z",
     "author": "Thesis Generator Research Team",
     "category": "Guides",
-    "tags": ["literature review", "academic writing", "research methodology", "graduate students", "thesis writing"],
-    "keywords": ["AI academic writing", "thesis conclusion", "AI tools for academic writing", "literature review", "graduate research"],
+    "tags": [
+      "literature review",
+      "academic writing",
+      "research methodology",
+      "graduate students",
+      "thesis writing"
+    ],
+    "keywords": [
+      "AI academic writing",
+      "thesis conclusion",
+      "AI tools for academic writing",
+      "literature review",
+      "graduate research"
+    ],
     "image": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80",
     "readTime": "12 min read",
     "featured": false,
@@ -40,8 +92,21 @@
     "publishedAt": "2026-02-02T08:13:28.665Z",
     "author": "Thesis Generator Research Team",
     "category": "Guides",
-    "tags": ["thesis writing", "academic formatting", "research methodology", "dissertation help", "citation styles"],
-    "keywords": ["thesis writing help", "dissertation help", "how to write methodology chapter", "APA formatting", "MLA style", "Chicago manual"],
+    "tags": [
+      "thesis writing",
+      "academic formatting",
+      "research methodology",
+      "dissertation help",
+      "citation styles"
+    ],
+    "keywords": [
+      "thesis writing help",
+      "dissertation help",
+      "how to write methodology chapter",
+      "APA formatting",
+      "MLA style",
+      "Chicago manual"
+    ],
     "image": "https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&q=80",
     "readTime": "12 min read",
     "featured": true,
@@ -56,8 +121,20 @@
     "publishedAt": "2026-02-01T20:05:18.659Z",
     "author": "Thesis Generator Research Team",
     "category": "Guides",
-    "tags": ["thesis writing", "academic writing", "research methodology", "graduate studies", "writing tips"],
-    "keywords": ["thesis writing tips", "dissertation help", "academic writing", "research methodology", "graduate studies"],
+    "tags": [
+      "thesis writing",
+      "academic writing",
+      "research methodology",
+      "graduate studies",
+      "writing tips"
+    ],
+    "keywords": [
+      "thesis writing tips",
+      "dissertation help",
+      "academic writing",
+      "research methodology",
+      "graduate studies"
+    ],
     "image": "https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e?w=800&q=80",
     "readTime": "12 min read",
     "featured": false,
@@ -72,8 +149,20 @@
     "publishedAt": "2026-02-01T14:11:59.952Z",
     "author": "Thesis Generator Research Team",
     "category": "Guides",
-    "tags": ["thesis writing", "academic writing", "research methodology", "dissertation help", "graduate studies"],
-    "keywords": ["thesis writing tips", "dissertation writing", "academic research", "graduate thesis", "research methodology"],
+    "tags": [
+      "thesis writing",
+      "academic writing",
+      "research methodology",
+      "dissertation help",
+      "graduate studies"
+    ],
+    "keywords": [
+      "thesis writing tips",
+      "dissertation writing",
+      "academic research",
+      "graduate thesis",
+      "research methodology"
+    ],
     "image": "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80",
     "readTime": "12 min read",
     "featured": false,
@@ -88,8 +177,20 @@
     "publishedAt": "2026-01-31T20:05:41.560Z",
     "author": "Thesis Generator Research Team",
     "category": "Guides",
-    "tags": ["thesis writing", "academic writing", "research methodology", "graduate studies", "dissertation help"],
-    "keywords": ["thesis writing tips", "dissertation writing", "academic research", "graduate writing", "research methodology"],
+    "tags": [
+      "thesis writing",
+      "academic writing",
+      "research methodology",
+      "graduate studies",
+      "dissertation help"
+    ],
+    "keywords": [
+      "thesis writing tips",
+      "dissertation writing",
+      "academic research",
+      "graduate writing",
+      "research methodology"
+    ],
     "image": "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=800&q=80",
     "readTime": "12 min read",
     "featured": false,
@@ -104,8 +205,20 @@
     "publishedAt": "2026-01-31T05:33:35.978Z",
     "author": "ThesisAI Research Team",
     "category": "Research",
-    "tags": ["dissertation research", "research methodology", "thesis methods", "academic writing", "graduate studies"],
-    "keywords": ["dissertation research", "research methodology", "thesis methods", "academic research", "graduate research"],
+    "tags": [
+      "dissertation research",
+      "research methodology",
+      "thesis methods",
+      "academic writing",
+      "graduate studies"
+    ],
+    "keywords": [
+      "dissertation research",
+      "research methodology",
+      "thesis methods",
+      "academic research",
+      "graduate research"
+    ],
     "image": "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=800&q=80",
     "readTime": "12 min read",
     "featured": true,
