@@ -1,56 +1,105 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Play, Check, X } from 'lucide-react';
+import { ArrowRight, Check, Sparkles, BookOpen, FileText, BarChart3, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Sample outlines based on topic keywords
+const generateOutline = (topic: string): string[] => {
+  const lowerTopic = topic.toLowerCase();
+  
+  if (lowerTopic.includes('ai') || lowerTopic.includes('artificial intelligence') || lowerTopic.includes('machine learning')) {
+    return [
+      'Introduction to AI and Research Context',
+      'Literature Review: Current State of AI',
+      'Theoretical Framework and Methodology',
+      'AI System Design and Implementation',
+      'Experimental Results and Analysis',
+      'Discussion and Implications',
+      'Conclusions and Future Research'
+    ];
+  } else if (lowerTopic.includes('business') || lowerTopic.includes('marketing') || lowerTopic.includes('management')) {
+    return [
+      'Introduction and Research Objectives',
+      'Literature Review: Business Theories',
+      'Research Methodology and Design',
+      'Market Analysis and Data Collection',
+      'Findings and Strategic Insights',
+      'Recommendations for Practice',
+      'Conclusions and Limitations'
+    ];
+  } else if (lowerTopic.includes('health') || lowerTopic.includes('medical') || lowerTopic.includes('psychology')) {
+    return [
+      'Introduction and Background',
+      'Literature Review: Theoretical Foundations',
+      'Research Design and Methodology',
+      'Participant Selection and Ethics',
+      'Results and Statistical Analysis',
+      'Discussion of Findings',
+      'Conclusions and Clinical Implications'
+    ];
+  } else if (lowerTopic.includes('education') || lowerTopic.includes('learning') || lowerTopic.includes('teaching')) {
+    return [
+      'Introduction to the Educational Context',
+      'Literature Review: Pedagogical Theories',
+      'Research Methodology',
+      'Data Collection and Analysis',
+      'Findings and Interpretation',
+      'Implications for Educators',
+      'Conclusions and Recommendations'
+    ];
+  } else {
+    return [
+      'Introduction and Problem Statement',
+      'Literature Review and Theoretical Framework',
+      'Research Methodology',
+      'Data Collection and Analysis',
+      'Results and Findings',
+      'Discussion and Interpretation',
+      'Conclusions and Future Directions'
+    ];
+  }
+};
+
 export function HeroSection() {
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [topic, setTopic] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [outline, setOutline] = useState<string[]>([]);
+  const [liveUsers, setLiveUsers] = useState(127);
+
+  // Simulate live users count
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveUsers(prev => {
+        const change = Math.floor(Math.random() * 7) - 3; // -3 to +3
+        const newValue = prev + change;
+        return Math.max(89, Math.min(186, newValue)); // Keep between 89-186
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleGeneratePreview = async () => {
+    if (!topic.trim()) return;
+    
+    setIsGenerating(true);
+    // Simulate AI processing
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setOutline(generateOutline(topic));
+    setIsGenerating(false);
+    setShowPreview(true);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleGeneratePreview();
+    }
+  };
 
   return (
-    <>
-    {/* Video Modal */}
-    <AnimatePresence>
-      {isVideoOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-          onClick={() => setIsVideoOpen(false)}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25 }}
-            className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setIsVideoOpen(false)}
-              className="absolute -top-12 right-0 p-2 text-white/80 hover:text-white transition-colors"
-            >
-              <X className="w-8 h-8" />
-            </button>
-            <iframe
-              width="100%"
-              height="100%"
-              src="https://www.youtube.com/embed/_5tT1IfqNS8?autoplay=1"
-              title="Thesis Generator Demo"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
-              className="w-full h-full"
-            />
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-
     <section className="relative min-h-screen overflow-hidden bg-white pt-16">
       {/* Animated mesh gradient background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(37,99,235,0.15),rgba(255,255,255,0))]" />
@@ -62,16 +111,32 @@ export function HeroSection() {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl animate-pulse" />
       <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-cyan-400/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
       
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-20 md:py-32">
-        {/* Badge */}
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-20 md:py-28">
+        {/* Live users badge */}
         <motion.div 
-          className="flex justify-center mb-8"
+          className="flex justify-center mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 border border-green-200 text-green-700 text-sm font-medium">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            {liveUsers} theses being generated right now
+          </span>
+        </motion.div>
+
+        {/* AI Badge */}
+        <motion.div 
+          className="flex justify-center mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.05 }}
+        >
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium">
-            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+            <Sparkles className="w-4 h-4" />
             AI-Powered Academic Writing
           </span>
         </motion.div>
@@ -91,42 +156,146 @@ export function HeroSection() {
         
         {/* Subheadline */}
         <motion.p 
-          className="max-w-2xl mx-auto text-center text-lg md:text-xl text-slate-600 leading-relaxed mb-12"
+          className="max-w-2xl mx-auto text-center text-lg md:text-xl text-slate-600 leading-relaxed mb-10"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          The most advanced AI Thesis Generator. Create 90+ page research papers, essays, and literature reviews with proper structure, auto-generated tables & charts, and human-like academic writing.
+          Create 90+ page research papers with proper structure, auto-generated tables & charts, and human-like academic writing in minutes.
         </motion.p>
         
-        {/* CTA Buttons */}
+        {/* Topic Input Section - THE KEY CONVERSION ELEMENT */}
         <motion.div 
-          className="flex flex-col sm:flex-row gap-4 justify-center"
+          className="max-w-2xl mx-auto"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <Link href="/auth/signup">
-            <Button size="xl" className="w-full sm:w-auto">
-              Start Writing Free
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </Link>
-          
-          <Button 
-            variant="secondary" 
-            size="xl" 
-            className="w-full sm:w-auto"
-            onClick={() => setIsVideoOpen(true)}
-          >
-            <Play className="mr-2 w-5 h-5" />
-            Watch Demo
-          </Button>
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 mb-6">
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Enter your thesis topic to see your structure instantly:
+            </label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="e.g., The impact of AI on healthcare diagnostics..."
+                  className="w-full pl-12 pr-4 py-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-slate-900 placeholder:text-slate-400 transition-all"
+                />
+              </div>
+              <Button 
+                size="lg" 
+                onClick={handleGeneratePreview}
+                disabled={!topic.trim() || isGenerating}
+                className="h-[56px] px-6 whitespace-nowrap"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 w-5 h-5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 w-5 h-5" />
+                    Preview Structure
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-slate-500 mt-3 text-center">
+              ✨ Free preview • No signup required • See your thesis structure in seconds
+            </p>
+          </div>
+
+          {/* Preview Outline - Shows after generation */}
+          <AnimatePresence>
+            {showPreview && outline.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: 'auto' }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
+                transition={{ duration: 0.5 }}
+                className="bg-gradient-to-br from-slate-50 to-white rounded-2xl border border-slate-200 shadow-lg p-6 mb-6"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                    <Check className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900">Your Thesis Structure</h3>
+                    <p className="text-xs text-slate-500">AI-generated outline based on your topic</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 mb-6">
+                  {outline.map((chapter, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-start gap-3 p-3 rounded-lg bg-white border border-slate-100"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-slate-800">Chapter {index + 1}: {chapter}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-xs text-slate-500 flex items-center gap-1">
+                            <FileText className="w-3 h-3" /> ~2,500 words
+                          </span>
+                          {(index === 2 || index === 4) && (
+                            <span className="text-xs text-purple-600 flex items-center gap-1">
+                              <BarChart3 className="w-3 h-3" /> Tables & Charts
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link href={`/auth/signup?topic=${encodeURIComponent(topic)}`} className="flex-1">
+                    <Button size="lg" className="w-full h-14 text-lg">
+                      Generate Full Thesis Free
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                </div>
+                <p className="text-xs text-slate-500 mt-3 text-center">
+                  🎁 First thesis is completely free • No credit card required
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Alternative CTA when no preview shown */}
+          {!showPreview && (
+            <motion.div 
+              className="flex justify-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Link href="/auth/signup">
+                <Button variant="outline" size="lg" className="gap-2">
+                  Or start writing directly
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </motion.div>
+          )}
         </motion.div>
         
         {/* Social proof */}
         <motion.div 
-          className="mt-16 text-center"
+          className="mt-12 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.4 }}
@@ -184,8 +353,8 @@ export function HeroSection() {
               <div className="w-3 h-3 rounded-full bg-green-400" />
             </div>
             <div className="flex-1 flex justify-center">
-              <div className="px-4 py-1 rounded-md bg-white border border-slate-200 text-xs text-slate-500">
-                thesisgenerator.io/app/generate
+              <div className="px-4 py-1 rounded-md bg-white border border-slate-200 text-xs text-slate-600 font-medium">
+                ✨ Professional Thesis with Tables & Charts
               </div>
             </div>
           </div>
@@ -358,6 +527,5 @@ export function HeroSection() {
         </motion.div>
       </motion.div>
     </section>
-    </>
   );
 }

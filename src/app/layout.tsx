@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/providers/auth-provider";
 import { Analytics } from "@vercel/analytics/next";
+import { CookieConsent } from "@/components/cookie-consent";
+import { ExitIntentPopup } from "@/components/exit-intent-popup";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -138,6 +140,8 @@ export default function RootLayout({
               },
             }}
           />
+          <CookieConsent />
+          <ExitIntentPopup />
           <Analytics />
         </AuthProvider>
       </body>

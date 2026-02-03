@@ -272,10 +272,46 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
       }
     }, 5000);
 
+    // Full data refresh every 3 minutes to ensure UI stays in sync
+    const fullRefreshInterval = setInterval(async () => {
+      console.log('🔄 Auto-refreshing thesis data (3 min interval)');
+      
+      // Refetch thesis
+      const { data: refreshedThesis } = await supabase
+        .from('theses')
+        .select('*')
+        .eq('id', resolvedParams.id)
+        .single();
+      
+      if (refreshedThesis) {
+        const oldStatus = previousStatusRef.current;
+        
+        // Check if status changed to completed
+        if (oldStatus === 'generating' && refreshedThesis.status === 'completed') {
+          handleThesisCompletion(refreshedThesis.title);
+        }
+        
+        previousStatusRef.current = refreshedThesis.status;
+        setThesis(refreshedThesis);
+      }
+      
+      // Refetch chapters
+      const { data: refreshedChapters } = await supabase
+        .from('chapters')
+        .select('*')
+        .eq('thesis_id', resolvedParams.id)
+        .order('chapter_number', { ascending: true });
+      
+      if (refreshedChapters) {
+        setChapters(refreshedChapters);
+      }
+    }, 180000); // 3 minutes = 180000ms
+
     return () => {
       supabase.removeChannel(thesisChannel);
       supabase.removeChannel(chaptersChannel);
       clearInterval(pollInterval);
+      clearInterval(fullRefreshInterval);
     };
   }, [user, resolvedParams.id, supabase, router]);
 
@@ -615,20 +651,46 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
               </div>
             ) : null}
 
-            {(thesis.status === 'completed' || thesis.status === 'exported') && (
-              <div className="flex gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setExportModalOpen(true)}>
-                  <Download className="mr-1.5 w-3.5 h-3.5" />
-                  Export
-                </Button>
-                <Button variant="ghost" size="sm" onClick={deleteThesis} disabled={deleting} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       </div>
+
+      {/* Prominent Export Banner when thesis is complete - placed at top */}
+      {(thesis.status === 'completed' || thesis.status === 'exported') && (
+        <Card className="p-5 mb-5 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-center sm:text-left">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <Check className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-green-800">🎉 Your Thesis is Ready!</h3>
+                <p className="text-sm text-green-600">Download your complete thesis in PDF or DOCX format</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button 
+                size="lg"
+                onClick={() => setExportModalOpen(true)}
+                className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/30 animate-[bounce_1s_ease-in-out_1]"
+              >
+                <Download className="mr-2 w-5 h-5" />
+                Export Now
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={deleteThesis} 
+                disabled={deleting} 
+                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                title="Delete thesis"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Progress */}
       {thesis.status !== 'draft' && (

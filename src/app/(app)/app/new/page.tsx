@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Modal } from '@/components/ui/modal';
+import { ReferenceUpload } from '@/components/thesis/reference-upload';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -25,7 +26,8 @@ import {
   Wand2,
   Table,
   BarChart3,
-  Plus
+  Plus,
+  Upload
 } from 'lucide-react';
 import { ACADEMIC_FIELDS, WRITING_STYLES, TARGET_LENGTHS } from '@/types';
 import { canUserGenerate } from '@/lib/subscription-client';
@@ -38,14 +40,24 @@ interface OutlineVisuals {
   hasChart?: boolean;
 }
 
+// Type for reference documents
+interface ReferenceDocument {
+  id: string;
+  filename: string;
+  fileSize: number;
+  fileType: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+}
+
 type OutlineVisualsMap = Record<string, Record<number, OutlineVisuals>>; // chapterNum -> subIndex -> visuals
 
 const steps = [
   { id: 1, title: 'Topic', description: 'What is your thesis about?' },
   { id: 2, title: 'Details', description: 'Academic field and style' },
-  { id: 3, title: 'Chapters', description: 'Structure your thesis' },
-  { id: 4, title: 'Outlines', description: 'Subchapters for each chapter' },
-  { id: 5, title: 'Review', description: 'Ready to generate' },
+  { id: 3, title: 'References', description: 'Upload source materials' },
+  { id: 4, title: 'Chapters', description: 'Structure your thesis' },
+  { id: 5, title: 'Outlines', description: 'Subchapters for each chapter' },
+  { id: 6, title: 'Review', description: 'Ready to generate' },
 ];
 
 export default function NewThesisPage() {
@@ -73,6 +85,7 @@ export default function NewThesisPage() {
   const [enableTables, setEnableTables] = useState(true);
   const [enableCharts, setEnableCharts] = useState(true);
   const [newChapter, setNewChapter] = useState('');
+  const [referenceDocuments, setReferenceDocuments] = useState<ReferenceDocument[]>([]);
 
   const router = useRouter();
   const { user, subscription } = useAuth();
@@ -173,8 +186,41 @@ export default function NewThesisPage() {
     }
   };
 
+  // Count total selected tables and charts across all outlines
+  const countSelectedVisuals = () => {
+    let tables = 0;
+    let charts = 0;
+    Object.values(outlineVisuals).forEach(chapterVisuals => {
+      Object.values(chapterVisuals).forEach(visual => {
+        if (visual.hasTable) tables++;
+        if (visual.hasChart) charts++;
+      });
+    });
+    return { tables, charts };
+  };
+
   const toggleOutlineVisual = (chapterIndex: number, subIndex: number, type: 'table' | 'chart') => {
     const chapterNum = (chapterIndex + 1).toString();
+    const isPremium = subscription?.isActive;
+    const { tables: currentTables, charts: currentCharts } = countSelectedVisuals();
+    
+    // Check if this visual is currently selected
+    const isCurrentlySelected = type === 'table' 
+      ? outlineVisuals[chapterNum]?.[subIndex]?.hasTable 
+      : outlineVisuals[chapterNum]?.[subIndex]?.hasChart;
+    
+    // For free users, limit to 1 table and 1 chart (can always deselect)
+    if (!isPremium && !isCurrentlySelected) {
+      if (type === 'table' && currentTables >= 1) {
+        toast.error('Free users can add 1 table. Upgrade to Pro for unlimited tables.');
+        return;
+      }
+      if (type === 'chart' && currentCharts >= 1) {
+        toast.error('Free users can add 1 chart. Upgrade to Pro for unlimited charts.');
+        return;
+      }
+    }
+    
     setOutlineVisuals(prev => {
       const newVisuals = { ...prev };
       if (!newVisuals[chapterNum]) {
@@ -301,15 +347,15 @@ export default function NewThesisPage() {
   };
 
   const handleNext = async () => {
-    if (currentStep < 5) {
+    if (currentStep < 6) {
       const nextStep = currentStep + 1;
       
-      // Auto-generate chapters when entering Step 3
-      if (nextStep === 3 && !chaptersGenerated && chapters.length === 0) {
+      // Auto-generate chapters when entering Step 4 (Chapters)
+      if (nextStep === 4 && !chaptersGenerated && chapters.length === 0) {
         setCurrentStep(nextStep);
         // Generate chapters automatically
         generateChaptersWithAI(false);
-      } else if (nextStep === 4 && !outlinesGenerated && Object.keys(outlines).length === 0) {
+      } else if (nextStep === 5 && !outlinesGenerated && Object.keys(outlines).length === 0) {
         setCurrentStep(nextStep);
         // Generate outlines automatically
         generateOutlinesWithAI(false);
@@ -368,6 +414,7 @@ export default function NewThesisPage() {
             outlines: outlinesWithVisuals,
             enableTables: subscription?.isActive ? enableTables : false,
             enableCharts: subscription?.isActive ? enableCharts : false,
+            referenceDocumentIds: referenceDocuments.filter(d => d.status === 'completed').map(d => d.id),
           },
         })
         .select()
@@ -414,10 +461,13 @@ export default function NewThesisPage() {
       case 2:
         return field && writingStyle && targetLength;
       case 3:
-        return chapters.length >= 3 && !generatingChapters;
+        // References step is optional - always allow proceeding
+        return true;
       case 4:
-        return Object.keys(outlines).length > 0 && !generatingOutlines;
+        return chapters.length >= 3 && !generatingChapters;
       case 5:
+        return Object.keys(outlines).length > 0 && !generatingOutlines;
+      case 6:
         return true;
       default:
         return false;
@@ -545,7 +595,27 @@ export default function NewThesisPage() {
           </div>
         )}
 
+        {/* Step 3: Reference Materials */}
         {currentStep === 3 && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900 mb-0.5">
+                Reference Materials
+              </h2>
+              <p className="text-xs text-slate-500 mb-3">
+                Upload documents that the AI will use as sources for your thesis (optional)
+              </p>
+              
+              <ReferenceUpload 
+                isPremium={subscription?.isActive || false}
+                onDocumentsChange={setReferenceDocuments}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Chapters */}
+        {currentStep === 4 && (
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-0.5">
@@ -577,14 +647,22 @@ export default function NewThesisPage() {
 
               {/* Loading state while generating */}
               {generatingChapters && chapters.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-8 space-y-3">
+                <div className="flex flex-col items-center justify-center py-10 space-y-4">
                   <div className="relative">
-                    <div className="w-12 h-12 border-3 border-slate-100 rounded-full"></div>
-                    <div className="w-12 h-12 border-3 border-blue-600 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
+                    <div className="w-16 h-16 border-4 border-slate-100 rounded-full"></div>
+                    <div className="w-16 h-16 border-4 border-blue-600 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Sparkles className="w-6 h-6 text-blue-600 animate-pulse" />
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-slate-900">Generating chapters</p>
-                    <p className="text-xs text-slate-500">{title}</p>
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-semibold text-slate-900">AI is generating chapters...</p>
+                    <p className="text-xs text-slate-500 max-w-xs">{title}</p>
+                    <div className="flex items-center justify-center gap-1 mt-2">
+                      <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -680,7 +758,8 @@ export default function NewThesisPage() {
           </div>
         )}
 
-        {currentStep === 4 && (
+        {/* Step 5: Outlines */}
+        {currentStep === 5 && (
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-0.5">
@@ -720,27 +799,34 @@ export default function NewThesisPage() {
                     </div>
                     <div className="flex-1">
                       <span className="text-xs text-slate-700">
-                        <span className="font-medium">Tables & Charts</span> are available with Pro.{' '}
+                        <span className="font-medium">Free:</span> 1 table & 1 chart. For more,{' '}
                         <Link href="/app/upgrade" className="text-blue-600 hover:underline font-medium">
-                          Upgrade now
+                          upgrade to Pro
                         </Link>
                       </span>
                     </div>
-                    <Lock className="w-3.5 h-3.5 text-slate-400" />
                   </div>
                 </div>
               )}
 
               {/* Loading state while generating */}
               {generatingOutlines && Object.keys(outlines).length === 0 && (
-                <div className="flex flex-col items-center justify-center py-8 space-y-3">
+                <div className="flex flex-col items-center justify-center py-10 space-y-4">
                   <div className="relative">
-                    <div className="w-12 h-12 border-3 border-slate-100 rounded-full"></div>
-                    <div className="w-12 h-12 border-3 border-blue-600 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
+                    <div className="w-16 h-16 border-4 border-slate-100 rounded-full"></div>
+                    <div className="w-16 h-16 border-4 border-purple-600 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-purple-600 animate-pulse" />
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-slate-900">Generating outlines</p>
-                    <p className="text-xs text-slate-500">{chapters.length} chapters</p>
+                  <div className="text-center space-y-1">
+                    <p className="text-sm font-semibold text-slate-900">AI is generating outlines...</p>
+                    <p className="text-xs text-slate-500">{chapters.length} chapters to process</p>
+                    <div className="flex items-center justify-center gap-1 mt-2">
+                      <div className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -772,7 +858,6 @@ export default function NewThesisPage() {
                               const visuals = outlineVisuals[chapterNum]?.[subIndex];
                               const hasTable = visuals?.hasTable;
                               const hasChart = visuals?.hasChart;
-                              const isPremium = subscription?.isActive;
                               
                               return (
                                 <div
@@ -828,46 +913,28 @@ export default function NewThesisPage() {
                                       {/* Table/Chart toggle buttons */}
                                       <div className="flex items-center gap-1.5 mt-1">
                                         <button
-                                          onClick={() => {
-                                            if (isPremium) {
-                                              toggleOutlineVisual(chapterIndex, subIndex, 'table');
-                                            } else {
-                                              toast.error('Tables are a Pro feature. Upgrade to add tables.');
-                                            }
-                                          }}
+                                          onClick={() => toggleOutlineVisual(chapterIndex, subIndex, 'table')}
                                           className={`flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${
                                             hasTable
                                               ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
-                                              : isPremium
-                                              ? 'bg-slate-100 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200'
-                                              : 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed'
+                                              : 'bg-slate-100 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200'
                                           }`}
-                                          title={isPremium ? (hasTable ? 'Remove table' : 'Add table') : 'Pro feature'}
+                                          title={hasTable ? 'Remove table' : 'Add table'}
                                         >
                                           <Table className="w-2.5 h-2.5" />
                                           {hasTable ? 'Table' : '+ Table'}
-                                          {!isPremium && <Lock className="w-2 h-2 ml-0.5" />}
                                         </button>
                                         <button
-                                          onClick={() => {
-                                            if (isPremium) {
-                                              toggleOutlineVisual(chapterIndex, subIndex, 'chart');
-                                            } else {
-                                              toast.error('Charts are a Pro feature. Upgrade to add charts.');
-                                            }
-                                          }}
+                                          onClick={() => toggleOutlineVisual(chapterIndex, subIndex, 'chart')}
                                           className={`flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${
                                             hasChart
                                               ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                                              : isPremium
-                                              ? 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600 border border-slate-200'
-                                              : 'bg-slate-50 text-slate-400 border border-slate-200 cursor-not-allowed'
+                                              : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600 border border-slate-200'
                                           }`}
-                                          title={isPremium ? (hasChart ? 'Remove chart' : 'Add chart') : 'Pro feature'}
+                                          title={hasChart ? 'Remove chart' : 'Add chart'}
                                         >
                                           <BarChart3 className="w-2.5 h-2.5" />
                                           {hasChart ? 'Chart' : '+ Chart'}
-                                          {!isPremium && <Lock className="w-2 h-2 ml-0.5" />}
                                         </button>
                                       </div>
                                     </div>
@@ -913,7 +980,8 @@ export default function NewThesisPage() {
           </div>
         )}
 
-        {currentStep === 5 && (
+        {/* Step 6: Review */}
+        {currentStep === 6 && (
           <div className="space-y-4">
             <div>
               <h2 className="text-base font-semibold text-slate-900 mb-0.5">
@@ -933,6 +1001,19 @@ export default function NewThesisPage() {
                   <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">Description</p>
                   <p className="text-sm text-slate-700">{description}</p>
                 </div>
+
+                {/* Reference Documents summary */}
+                {referenceDocuments.length > 0 && (
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <p className="text-[10px] text-blue-600 uppercase tracking-wide mb-0.5">Reference Materials</p>
+                    <p className="text-sm text-blue-800">
+                      {referenceDocuments.length} document{referenceDocuments.length !== 1 ? 's' : ''} uploaded
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      AI will use these as sources during generation
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-3 gap-2">
                   <div className="p-3 bg-slate-50 rounded-lg">
@@ -1034,7 +1115,7 @@ export default function NewThesisPage() {
         >
           {loading ? (
             'Creating...'
-          ) : currentStep === 5 ? (
+          ) : currentStep === 6 ? (
             <>
               <Sparkles className="mr-1.5 w-3.5 h-3.5" />
               Generate Thesis

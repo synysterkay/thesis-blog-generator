@@ -31,6 +31,18 @@ import ReactMarkdown from 'react-markdown';
 import { ChartRenderer, ChartThemeSelector, ChartTheme } from '@/components/thesis/chart-renderer';
 import { TableRenderer, TableStyleSelector, TableStyle } from '@/components/thesis/table-renderer';
 
+// Random style selectors for variety
+const TABLE_STYLES: TableStyle[] = ['academic', 'modern', 'minimal', 'striped', 'bordered'];
+const CHART_THEMES: ChartTheme[] = ['academic', 'colorful', 'monochrome', 'warm', 'cool'];
+
+function getRandomTableStyle(): TableStyle {
+  return TABLE_STYLES[Math.floor(Math.random() * TABLE_STYLES.length)];
+}
+
+function getRandomChartTheme(): ChartTheme {
+  return CHART_THEMES[Math.floor(Math.random() * CHART_THEMES.length)];
+}
+
 interface ChapterContent {
   subchapters?: string[];
   subchaptersWithVisuals?: Array<{ title: string; hasTable?: boolean; hasChart?: boolean }>;
@@ -60,9 +72,9 @@ export default function ChapterPage({
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
   
-  // Visual styles
-  const [tableStyle, setTableStyle] = useState<TableStyle>('academic');
-  const [chartTheme, setChartTheme] = useState<ChartTheme>('academic');
+  // Visual styles - randomized on each chapter load for variety
+  const [tableStyle, setTableStyle] = useState<TableStyle>(() => getRandomTableStyle());
+  const [chartTheme, setChartTheme] = useState<ChartTheme>(() => getRandomChartTheme());
   
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();

@@ -50,6 +50,31 @@ export function TestimonialsSection() {
             </motion.div>
           ))}
         </div>
+        
+        {/* Product Hunt Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="flex flex-col items-center mt-12"
+        >
+          <p className="text-sm text-slate-500 mb-3">Leave us a review on Product Hunt</p>
+          <a 
+            href="https://www.producthunt.com/products/thesisgenerator-tech/reviews/new?utm_source=badge-product_review&utm_medium=badge&utm_source=badge-thesisgenerator-tech" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:opacity-80 transition-opacity"
+          >
+            <img 
+              src="https://api.producthunt.com/widgets/embed-image/v1/product_review.svg?product_id=1086240&theme=neutral" 
+              alt="ThesisGenerator.io - Instant thesis statements, powered by AI | Product Hunt" 
+              width="250" 
+              height="54"
+              className="h-[54px] w-[250px]"
+            />
+          </a>
+        </motion.div>
       </div>
     </section>
   );

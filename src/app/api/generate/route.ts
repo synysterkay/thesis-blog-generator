@@ -156,7 +156,39 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
       outlinesWithVisuals?: Record<string, OutlineVisual[]>;
       enableTables?: boolean;
       enableCharts?: boolean;
+      referenceDocumentIds?: string[];
     } | null;
+
+    // Fetch reference documents if any were uploaded
+    let referenceContent = '';
+    if (metadata?.referenceDocumentIds?.length) {
+      console.log('📚 Fetching', metadata.referenceDocumentIds.length, 'reference documents...');
+      const { data: referenceDocs } = await supabase
+        .from('reference_documents')
+        .select('filename, chunks, extracted_text')
+        .in('id', metadata.referenceDocumentIds)
+        .eq('status', 'completed');
+      
+      if (referenceDocs?.length) {
+        // Build reference content from chunks (more efficient for LLM context)
+        const referenceChunks: string[] = [];
+        for (const doc of referenceDocs) {
+          if (doc.chunks && Array.isArray(doc.chunks)) {
+            // Use first 3 chunks per document to stay within context limits
+            const docChunks = doc.chunks.slice(0, 3).map((chunk: string) => 
+              `[From: ${doc.filename}]\n${chunk}`
+            );
+            referenceChunks.push(...docChunks);
+          } else if (doc.extracted_text) {
+            // Fallback to truncated full text
+            const truncated = doc.extracted_text.substring(0, 3000);
+            referenceChunks.push(`[From: ${doc.filename}]\n${truncated}`);
+          }
+        }
+        referenceContent = referenceChunks.join('\n\n---\n\n');
+        console.log('📖 Reference content loaded:', referenceContent.length, 'chars from', referenceDocs.length, 'documents');
+      }
+    }
 
     // If no chapters exist, create them
     if (chapters.length === 0) {
@@ -198,8 +230,9 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
       const chaptersToGenerate = isPremium ? chapterTitles : chapterTitles.slice(0, FREE_USER_CHAPTER_LIMIT);
       const lockedChapters = isPremium ? [] : chapterTitles.slice(FREE_USER_CHAPTER_LIMIT);
 
-      // Get outlines from metadata - prefer outlinesWithVisuals for visual settings
-      const outlinesWithVisuals = metadata?.outlinesWithVisuals || {};
+      // Get outlines from metadata - the outlines field contains visual settings (hasTable, hasChart)
+      // Note: In new/page.tsx, outlinesWithVisuals is saved under 'outlines' key
+      const outlinesWithVisuals = metadata?.outlines || metadata?.outlinesWithVisuals || {};
       const simpleOutlines = metadata?.outlines || {};
 
       // Create chapter records for chapters to generate
@@ -292,22 +325,31 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
             ? JSON.parse(chapter.content) 
             : chapter.content;
           
-          // Check for visual outlines first
+          // Check for visual outlines first (explicitly named subchaptersWithVisuals)
           if (contentData?.subchaptersWithVisuals && Array.isArray(contentData.subchaptersWithVisuals)) {
             subchaptersWithVisuals = contentData.subchaptersWithVisuals.filter((s: OutlineVisual | null) => s && s.title);
             subchapters = subchaptersWithVisuals.map(s => s.title).filter(Boolean);
           } else if (contentData?.subchapters && Array.isArray(contentData.subchapters)) {
             // Handle both string[] and object[] formats
-            subchapters = contentData.subchapters
-              .map((s: string | { title?: string } | null) => {
-                if (!s) return null;
-                if (typeof s === 'string') return s;
-                if (typeof s === 'object' && s.title) return s.title;
-                return null;
-              })
-              .filter(Boolean) as string[];
-            // Convert to visual format without any visuals
-            subchaptersWithVisuals = subchapters.map(title => ({ title }));
+            // Check if subchapters contains objects with visual settings
+            const firstItem = contentData.subchapters[0];
+            if (firstItem && typeof firstItem === 'object' && 'title' in firstItem) {
+              // It's an array of objects with visual settings - preserve them!
+              subchaptersWithVisuals = contentData.subchapters.filter((s: OutlineVisual | null) => s && s.title);
+              subchapters = subchaptersWithVisuals.map((s: OutlineVisual) => s.title).filter(Boolean);
+              console.log('📊 Found visual settings in subchapters:', subchaptersWithVisuals.map(s => ({ title: s.title, hasTable: s.hasTable, hasChart: s.hasChart })));
+            } else {
+              // It's an array of strings
+              subchapters = contentData.subchapters
+                .map((s: string | null) => {
+                  if (!s) return null;
+                  if (typeof s === 'string') return s;
+                  return null;
+                })
+                .filter(Boolean) as string[];
+              // Convert to visual format without any visuals
+              subchaptersWithVisuals = subchapters.map(title => ({ title }));
+            }
           }
         }
       } catch (parseError) {
@@ -343,7 +385,8 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
             chapters.map(c => c.title),
             thesis.writing_style,
             thesis.language || 'English',
-            wordTargets.introWords
+            wordTargets.introWords,
+            referenceContent // Pass user's uploaded reference sources
           );
           generatedContentTracker.push(content);
         } else if (chapter.title.toLowerCase().includes('conclusion')) {
@@ -420,16 +463,28 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
               thesis.writing_style,
               previousContext, // Pass previous content for deduplication
               thesis.language || 'English',
-              wordTargets.sectionWords
+              wordTargets.sectionWords,
+              referenceContent // Pass user's uploaded reference sources
             );
             
             console.log('  ✅ Section generated:', section, '-', sectionContent.split(/\s+/).length, 'words');
+            console.log('  📊 Visual settings for section:', section, '- hasTable:', sectionVisuals?.hasTable, 'hasChart:', sectionVisuals?.hasChart, 'isPremium:', isPremium);
             
             sectionContents.push(`## ${section}\n\n${sectionContent}`);
             generatedContentTracker.push(sectionContent);
 
-            // Generate table if requested for this outline (premium only)
-            if (isPremium && sectionVisuals?.hasTable && !isNonDataChapter(chapter.title)) {
+            // Track total tables and charts generated for free user limits
+            const totalTablesGenerated = sectionTables.length;
+            const totalChartsGenerated = sectionCharts.length;
+            
+            // Free users get 1 table, premium get unlimited
+            const canGenerateTable = isPremium || totalTablesGenerated < 1;
+            // Free users get 1 chart, premium get unlimited
+            const canGenerateChart = isPremium || totalChartsGenerated < 1;
+
+            // Generate table if requested for this outline
+            if (canGenerateTable && sectionVisuals?.hasTable && !isNonDataChapter(chapter.title)) {
+              console.log('  📋 Generating table for section:', section, '(isPremium:', isPremium, 'totalTables:', totalTablesGenerated, ')');
               const tableData = await generateTableData(
                 `${thesis.title}: ${topicText}`,
                 `${chapter.title} - ${section}`,
@@ -437,26 +492,30 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
                 sectionContent.slice(0, 500)
               );
               if (tableData) {
+                console.log('  ✅ Table generated:', tableData.caption);
                 sectionTables.push({ section, ...tableData });
               }
             }
 
-            // Generate chart if requested for this outline (premium only)
-            if (isPremium && sectionVisuals?.hasChart && !isNonDataChapter(chapter.title)) {
-              // Pick chart type based on content analysis
+            // Generate chart if requested for this outline
+            if (canGenerateChart && sectionVisuals?.hasChart && !isNonDataChapter(chapter.title)) {
+              console.log('  📈 Generating chart for section:', section, '(isPremium:', isPremium, 'totalCharts:', totalChartsGenerated, ')');
+              // Pick chart type based on content analysis or random selection for variety
               const chartTypes: Array<'bar' | 'line' | 'pie' | 'area'> = ['bar', 'line', 'pie', 'area'];
               const contentLower = sectionContent.toLowerCase();
               
-              let chartType: 'bar' | 'line' | 'pie' | 'area' = 'bar';
+              let chartType: 'bar' | 'line' | 'pie' | 'area';
               if (contentLower.includes('trend') || contentLower.includes('over time') || contentLower.includes('growth') || contentLower.includes('year')) {
                 chartType = 'line';
               } else if (contentLower.includes('distribution') || contentLower.includes('proportion') || contentLower.includes('percentage') || contentLower.includes('share')) {
                 chartType = 'pie';
               } else if (contentLower.includes('cumulative') || contentLower.includes('total') || contentLower.includes('progression')) {
                 chartType = 'area';
+              } else if (contentLower.includes('comparison') || contentLower.includes('compare') || contentLower.includes('versus') || contentLower.includes('ranking')) {
+                chartType = 'bar';
               } else {
-                // Rotate through chart types for variety
-                chartType = chartTypes[sectionCharts.length % chartTypes.length];
+                // Random selection for variety when no specific keyword is found
+                chartType = chartTypes[Math.floor(Math.random() * chartTypes.length)];
               }
               
               const chartData = await generateChartData(
@@ -466,6 +525,7 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
                 chartType
               );
               if (chartData) {
+                console.log('  ✅ Chart generated:', chartData.caption, 'type:', chartType);
                 sectionCharts.push({ section, ...chartData });
               }
             }
@@ -474,6 +534,7 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
           content = sectionContents.join('\n\n');
 
           const wordCount = content.split(/\s+/).length;
+          console.log('💾 Saving chapter:', chapter.title, '- Tables:', sectionTables.length, 'Charts:', sectionCharts.length);
           console.log('💾 Saving regular chapter:', chapter.title, 'with', wordCount, 'words');
 
           // Store tables and charts in the content JSON since table doesn't have separate columns

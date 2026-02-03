@@ -282,7 +282,8 @@ export async function generateSectionContent(
   writingStyle: string,
   previousContext: string = '',
   language: string = 'English',
-  wordTarget: string = '800-1200'
+  wordTarget: string = '800-1200',
+  referenceContent: string = ''
 ): Promise<string> {
   // Build context instruction if we have previous content
   const contextInstruction = previousContext 
@@ -295,6 +296,24 @@ ${previousContext.slice(0, 3000)}
 ---PREVIOUS CONTENT END---
 
 IMPORTANT: Ensure your content is COMPLETELY UNIQUE and does not restate any of the above. Focus on NEW angles, different examples, and fresh perspectives specific to this section.
+`
+    : '';
+
+  // Build reference instruction if we have user-provided sources
+  const referenceInstruction = referenceContent
+    ? `
+## USER-PROVIDED REFERENCE SOURCES - USE AS PRIMARY SOURCES
+The user has uploaded the following reference documents. Use these as PRIMARY sources for your content. Cite ideas, findings, and information from these sources:
+
+---REFERENCE SOURCES START---
+${referenceContent.slice(0, 8000)}
+---REFERENCE SOURCES END---
+
+IMPORTANT: 
+- Incorporate information and ideas from these reference sources into your writing
+- Cite the source filenames appropriately when using their content (e.g., "According to [filename]...")
+- Synthesize information from multiple sources where relevant
+- Use these sources to support arguments and provide evidence
 `
     : '';
 
@@ -314,6 +333,7 @@ Research Topic: ${thesisTitle}
 Academic Field: ${academicField}
 Writing Style: ${writingStyle}
 ${contextInstruction}
+${referenceInstruction}
 IMPORTANT: You are writing ONLY the content for this specific section. Do NOT include:
 - Chapter headers (like "Chapter 3:" or "## Chapter")
 - Section numbers or prefixes
@@ -360,9 +380,24 @@ export async function generateIntroduction(
   chapters: string[],
   writingStyle: string,
   language: string = 'English',
-  wordTarget: string = '1000-1500'
+  wordTarget: string = '1000-1500',
+  referenceContent: string = ''
 ): Promise<string> {
   const styleInstructions = getWritingStyleInstructions(writingStyle);
+  
+  // Build reference instruction if we have user-provided sources
+  const referenceInstruction = referenceContent
+    ? `
+## USER-PROVIDED REFERENCE SOURCES
+Use these uploaded reference documents to inform and support your introduction:
+
+---REFERENCE SOURCES---
+${referenceContent.slice(0, 6000)}
+---END REFERENCES---
+
+Incorporate relevant background information and context from these sources.
+`
+    : '';
   
   const messages: DeepSeekMessage[] = [
     { role: 'system', content: THESIS_SYSTEM_PROMPT },
@@ -374,7 +409,7 @@ Write in ${language}. Create a comprehensive academic introduction chapter that 
 Topic: ${topic}
 Writing Style: ${writingStyle}
 Chapters to be covered: ${chapters.join(', ')}
-
+${referenceInstruction}
 ## WRITING STYLE REQUIREMENTS
 ${styleInstructions}
 

@@ -572,8 +572,11 @@ export function PDFExporter({ thesis, onComplete, onError }: PDFExporterProps) {
             const { sections, tables, charts } = getChapterContent(chapter);
             const chapterNum = i + 1;
             
-            // Get AI-generated footnotes for this chapter
-            const footnotes = chapterFootnotes.get(i) || [];
+            // Skip footnotes for References chapter
+            const isReferencesChapter = chapter.title.toLowerCase().includes('reference');
+            
+            // Get AI-generated footnotes for this chapter (skip for references)
+            const footnotes = isReferencesChapter ? [] : (chapterFootnotes.get(i) || []);
             const footnoteRefs: { num: number; source: string }[] = [];
             
             // Count paragraphs for footnote placement
@@ -587,6 +590,19 @@ export function PDFExporter({ thesis, onComplete, onError }: PDFExporterProps) {
             // Track subheading numbers within chapter
             let headingCounter = 0;
             let subheadingCounter = 0;
+            
+            // Track current section name for inline table/chart placement
+            let currentSectionName = '';
+            
+            // Helper to find table for a section
+            const getTableForSection = (sectionName: string) => {
+              return tables?.find(t => t.section === sectionName);
+            };
+            
+            // Helper to find chart for a section
+            const getChartForSection = (sectionName: string) => {
+              return charts?.find(c => c.section === sectionName);
+            };
             
             return (
               <div key={i} className="page-break" style={{ padding: '10px' }}>
@@ -609,10 +625,11 @@ export function PDFExporter({ thesis, onComplete, onError }: PDFExporterProps) {
                   {chapter.title}
                 </h3>
                 
-                {/* Chapter Content with Hierarchy and Footnotes */}
+                {/* Chapter Content with Hierarchy, Footnotes, and Inline Tables/Charts */}
                 {sections.map((section, j) => {
                   // Check if we should add a footnote reference to this paragraph
-                  const shouldAddFootnote = section.type === 'paragraph' && 
+                  const shouldAddFootnote = !isReferencesChapter && 
+                    section.type === 'paragraph' && 
                     footnoteInsertPoints.includes(j) && 
                     footnotes[footnoteInsertPoints.indexOf(j)];
                   
@@ -624,27 +641,47 @@ export function PDFExporter({ thesis, onComplete, onError }: PDFExporterProps) {
                   }
                   
                   if (section.type === 'heading') {
+                    // Before rendering new heading, check if previous section had table/chart
+                    const prevSectionTable = currentSectionName ? getTableForSection(currentSectionName) : null;
+                    const prevSectionChart = currentSectionName ? getChartForSection(currentSectionName) : null;
+                    
                     headingCounter++;
                     subheadingCounter = 0;
+                    currentSectionName = section.text;
+                    
                     return (
-                      <h4 
-                        key={j} 
-                        style={{ 
-                          fontSize: '13pt', 
-                          fontWeight: 'bold', 
-                          marginTop: '25px',
-                          marginBottom: '15px',
-                          textAlign: 'left'
-                        }}
-                      >
-                        {chapterNum}.{headingCounter}. {section.text}
-                      </h4>
+                      <div key={j}>
+                        {/* Render table/chart from previous section */}
+                        {prevSectionTable && (() => {
+                          globalTableIndex++;
+                          const html = renderTable(prevSectionTable, globalTableIndex - 1);
+                          return <div dangerouslySetInnerHTML={{ __html: html }} />;
+                        })()}
+                        {prevSectionChart && (() => {
+                          globalChartIndex++;
+                          const html = renderChart(prevSectionChart, globalChartIndex - 1);
+                          return <div dangerouslySetInnerHTML={{ __html: html }} />;
+                        })()}
+                        
+                        <h4 
+                          style={{ 
+                            fontSize: '13pt', 
+                            fontWeight: 'bold', 
+                            marginTop: '25px',
+                            marginBottom: '15px',
+                            textAlign: 'left'
+                          }}
+                        >
+                          {chapterNum}.{headingCounter}. {section.text}
+                        </h4>
+                      </div>
                     );
                   }
                   
                   if (section.type === 'subheading') {
                     subheadingCounter++;
                     const headingNum = headingCounter || 1;
+                    currentSectionName = section.text;
                     return (
                       <h5 
                         key={j} 
@@ -680,38 +717,29 @@ export function PDFExporter({ thesis, onComplete, onError }: PDFExporterProps) {
                   );
                 })}
 
-                {/* Tables for this chapter */}
-                {tables && tables.length > 0 ? (
-                  <div style={{ marginTop: '30px' }}>
-                    {console.log('📋 Rendering', tables.length, 'tables for chapter:', chapter.title)}
-                    {tables.map((table, idx) => {
-                      globalTableIndex++;
-                      console.log('📋 Table', idx, ':', table?.caption, '- columns:', table?.columns?.length, 'rows:', table?.rows?.length);
-                      const html = renderTable(table, globalTableIndex - 1);
-                      return <div key={idx} dangerouslySetInnerHTML={{ __html: html }} />;
-                    })}
-                  </div>
-                ) : (
-                  <>{/* No tables for this chapter */}</>
-                )}
+                {/* Render table/chart for the last section */}
+                {(() => {
+                  const lastSectionTable = currentSectionName ? getTableForSection(currentSectionName) : null;
+                  const lastSectionChart = currentSectionName ? getChartForSection(currentSectionName) : null;
+                  
+                  return (
+                    <>
+                      {lastSectionTable && (() => {
+                        globalTableIndex++;
+                        const html = renderTable(lastSectionTable, globalTableIndex - 1);
+                        return <div dangerouslySetInnerHTML={{ __html: html }} />;
+                      })()}
+                      {lastSectionChart && (() => {
+                        globalChartIndex++;
+                        const html = renderChart(lastSectionChart, globalChartIndex - 1);
+                        return <div dangerouslySetInnerHTML={{ __html: html }} />;
+                      })()}
+                    </>
+                  );
+                })()}
 
-                {/* Charts/Figures for this chapter */}
-                {charts && charts.length > 0 ? (
-                  <div style={{ marginTop: '30px' }}>
-                    {console.log('📈 Rendering', charts.length, 'charts for chapter:', chapter.title)}
-                    {charts.map((chart, idx) => {
-                      globalChartIndex++;
-                      console.log('📈 Chart', idx, ':', chart?.caption, '- type:', chart?.type, 'labels:', chart?.labels?.length);
-                      const html = renderChart(chart, globalChartIndex - 1);
-                      return <div key={idx} dangerouslySetInnerHTML={{ __html: html }} />;
-                    })}
-                  </div>
-                ) : (
-                  <>{/* No charts for this chapter */}</>
-                )}
-
-                {/* Footnotes Section (at bottom of chapter content) */}
-                {footnoteRefs.length > 0 && (
+                {/* Footnotes Section (at bottom of chapter content) - skip for references */}
+                {!isReferencesChapter && footnoteRefs.length > 0 && (
                   <div dangerouslySetInnerHTML={{ __html: renderFootnotesSection(footnoteRefs) }} />
                 )}
               </div>

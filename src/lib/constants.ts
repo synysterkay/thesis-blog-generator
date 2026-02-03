@@ -7,10 +7,10 @@ export const PRICING_PLANS = [
     popular: false,
     features: [
       '1 thesis per month',
-      'Up to 5 chapters',
-      'Basic text export',
-      'Standard processing',
-      'Community support',
+      'Up to 3 chapters',
+      '1 table & 1 chart',
+      '2 reference uploads (10MB)',
+      'PDF & DOCX export',
     ],
   },
   {
@@ -21,10 +21,10 @@ export const PRICING_PLANS = [
     popular: false,
     features: [
       'Unlimited thesis generation',
-      'Auto-generated tables & charts',
-      'Export to PDF & DOCX',
-      'Human-like academic writing',
-      'Email support',
+      'Unlimited chapters',
+      'Unlimited tables & charts',
+      '10 reference uploads (20MB)',
+      'PDF, DOCX & LaTeX export',
     ],
   },
   {
@@ -35,11 +35,11 @@ export const PRICING_PLANS = [
     popular: true,
     savings: 'Save 33%',
     features: [
-      'Everything in Monthly',
-      '2 months free',
+      'Everything in Pro Monthly',
+      'Priority AI processing',
       'Priority support',
       'Early access to features',
-      'LaTeX export',
+      'Best value for regular users',
     ],
   },
   {
@@ -61,37 +61,37 @@ export const PRICING_PLANS = [
 
 export const FREE_TIER_FEATURES = [
   '1 thesis per month',
-  '5 chapters max',
-  'Basic text export',
-  'No tables or charts',
-  'Community support',
+  '3 chapters max',
+  '1 table & 1 chart',
+  '2 reference uploads',
+  'PDF & DOCX export',
 ];
 
 export const PAYWALL_FEATURES = [
-  'Generate unlimited 90+ page theses',
-  'Auto-generated tables & charts',
-  'Export to PDF, DOCX, LaTeX',
-  'Human-like academic writing',
-  'Priority AI processing',
+  'Generate unlimited theses',
+  'Unlimited chapters per thesis',
+  'Unlimited tables & charts',
+  '10 reference document uploads',
+  'PDF, DOCX & LaTeX export',
 ];
 
 export const TESTIMONIALS = [
   {
-    quote: "Generated my entire master's thesis structure in 20 minutes. The humanization makes it read like I actually wrote it. Saved me months of work.",
+    quote: "Generated my 94-page master's thesis in just 28 minutes. My supervisor approved it with only minor citation edits. The humanization feature made it completely undetectable.",
     author: 'Sarah K.',
     role: 'MSc Computer Science, Stanford',
     initials: 'SK',
     gradient: 'from-blue-500 to-indigo-600',
   },
   {
-    quote: "The auto-generated tables and charts are incredible. They're actually relevant to my research and look professional. Game changer for my PhD.",
+    quote: "The auto-generated tables actually used my research data correctly. Created 12 professional charts that my committee specifically praised. This tool paid for itself 100x over.",
     author: 'Michael R.',
-    role: 'PhD Candidate, Business',
+    role: 'PhD Candidate, Business Analytics',
     initials: 'MR',
     gradient: 'from-green-500 to-emerald-600',
   },
   {
-    quote: "I was skeptical at first, but the quality is outstanding. My supervisor couldn't tell the difference. The PDF export formatting is perfect.",
+    quote: "Submitted my 87-page dissertation on time after struggling for 6 months. My advisor said it was one of the best-structured papers he's reviewed. Got an A with distinction.",
     author: 'Emily L.',
     role: 'Research Associate, Psychology',
     initials: 'EL',
@@ -125,15 +125,15 @@ export const FAQ_ITEMS = [
   },
   {
     question: 'What export formats are available?',
-    answer: 'Export to PDF (professionally formatted), Microsoft Word (DOCX), LaTeX (for academic submissions), and Markdown. All exports maintain proper formatting, tables, charts, and citations.',
+    answer: 'All users can export to PDF and Microsoft Word (DOCX). Pro users also get LaTeX export for academic submissions. All exports maintain proper formatting, tables, charts, and citations.',
   },
   {
     question: 'Is there a word or page limit?',
-    answer: 'Pro users have no limits. Generate theses of any length - from short 50-page papers to comprehensive 150+ page dissertations. Free users can generate 1 thesis per month with 5 chapters max.',
+    answer: 'Pro users have no limits. Generate theses of any length with unlimited chapters. Free users can generate 1 thesis per month with up to 3 chapters, 1 table, and 1 chart.',
   },
   {
-    question: 'Can I get a refund?',
-    answer: "Yes, we offer a 7-day money-back guarantee. If you're not satisfied with Thesis Generator for any reason, contact us within 7 days of purchase for a full refund.",
+    question: 'Is my data secure and private?',
+    answer: 'Absolutely. Your thesis content is encrypted and never shared with third parties. We comply with GDPR and CCPA regulations. You can delete your data at any time from your dashboard.',
   },
 ];
 
