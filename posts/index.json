@@ -1,5 +1,33 @@
 [
   {
+    "slug": "complete-guide-to-thesis-formatting-and-structure",
+    "title": "Master Thesis Formatting: Structure, Style & Submission Guide",
+    "excerpt": "A comprehensive guide to thesis formatting and structure with step-by-step instructions, templates, and expert tips for graduate students.",
+    "description": "Learn essential thesis formatting rules, structure requirements, and practical tips for perfect submission. Includes templates and expert advice.",
+    "date": "2026-02-06",
+    "publishedAt": "2026-02-06T03:51:45.933Z",
+    "author": "Thesis Generator Research Team",
+    "category": "Guides",
+    "tags": [
+      "thesis formatting",
+      "dissertation structure",
+      "academic writing",
+      "research methodology",
+      "graduate studies"
+    ],
+    "keywords": [
+      "thesis formatting",
+      "thesis structure",
+      "dissertation formatting",
+      "academic writing guide",
+      "research paper format"
+    ],
+    "image": "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&q=80",
+    "readTime": "12 min read",
+    "featured": true,
+    "filename": "2026-02-06-complete-guide-to-thesis-formatting-and-structure.mdx"
+  },
+  {
     "slug": "how-to-write-compelling-thesis-introduction-guide",
     "title": "Mastering Your Thesis Introduction: A Step-by-Step Guide for Academic Success",
     "excerpt": "Your thesis introduction sets the stage for your entire research. Learn how to craft a compelling opening that engages readers and clearly presents your study's significance.",
@@ -364,34 +392,6 @@
     "readTime": "12 min read",
     "featured": false,
     "filename": "2026-02-04-plagiarism-detection-tools-guide-for-students.mdx"
-  },
-  {
-    "slug": "complete-guide-to-thesis-formatting-and-structure",
-    "title": "Mastering Thesis Formatting: A Step-by-Step Structural Guide",
-    "excerpt": "This complete guide covers everything from title pages to appendices, helping you master thesis formatting and structure with practical examples and expert tips.",
-    "description": "Learn proper thesis formatting and structure with our comprehensive guide. Essential tips for graduate students to meet academic standards and avoid common mistakes.",
-    "date": "2026-02-03",
-    "publishedAt": "2026-02-03T21:17:37.752Z",
-    "author": "Thesis Generator Research Team",
-    "category": "Guides",
-    "tags": [
-      "thesis formatting",
-      "dissertation structure",
-      "academic writing",
-      "research methodology",
-      "graduate studies"
-    ],
-    "keywords": [
-      "thesis formatting",
-      "thesis structure",
-      "dissertation formatting",
-      "academic formatting",
-      "research paper structure"
-    ],
-    "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80",
-    "readTime": "12 min read",
-    "featured": true,
-    "filename": "2026-02-03-complete-guide-to-thesis-formatting-and-structure.mdx"
   },
   {
     "slug": "mastering-academic-writing-style-graduate-students-guide",
