@@ -1,17 +1,119 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Check, Shield, RotateCcw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, Shield, RotateCcw, X, Mail, Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { PRICING_PLANS } from '@/lib/constants';
+import { toast } from 'sonner';
+import { trackInitiateCheckout, identifyUser } from '@/lib/tiktok';
+import { createClient } from '@/lib/supabase/client';
 
 export function PricingSection() {
-  const getButtonLink = (planId: string) => {
-    if (planId === 'free') {
-      return '/auth/signup';
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) {
+        setUser({ id: user.id, email: user.email });
+      }
+    });
+  }, []);
+
+  const handlePaidPlanClick = async (planId: string) => {
+    // If user is signed in, go directly to checkout
+    if (user) {
+      setLoading(true);
+      setSelectedPlan(planId);
+      
+      const plan = PRICING_PLANS.find(p => p.id === planId);
+      identifyUser({ email: user.email });
+      trackInitiateCheckout({
+        contentId: `thesis_${planId}`,
+        contentName: plan?.name || planId,
+        value: plan?.price || 0
+      });
+      
+      try {
+        const response = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ planId }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to create checkout');
+        }
+
+        window.location.href = data.url;
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Checkout failed';
+        toast.error(message);
+        setLoading(false);
+      }
+      return;
     }
-    return '/auth/signup?plan=' + planId;
+    
+    // Not signed in - show email modal for guest checkout
+    setSelectedPlan(planId);
+    setShowEmailModal(true);
+  };
+
+  const handleGuestCheckout = async () => {
+    if (!email || !selectedPlan) return;
+    
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+    
+    // Identify user and track TikTok InitiateCheckout
+    const plan = PRICING_PLANS.find(p => p.id === selectedPlan);
+    identifyUser({ email });
+    trackInitiateCheckout({
+      contentId: `thesis_${selectedPlan}`,
+      contentName: plan?.name || selectedPlan,
+      value: plan?.price || 0
+    });
+    
+    try {
+      const response = await fetch('/api/checkout/guest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: selectedPlan, email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout');
+      }
+
+      // Redirect to LemonSqueezy checkout
+      window.location.href = data.url;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Checkout failed';
+      toast.error(message);
+      setLoading(false);
+    }
+  };
+
+  const getPlanName = (planId: string) => {
+    const plan = PRICING_PLANS.find(p => p.id === planId);
+    return plan?.name || planId;
   };
 
   const getButtonText = (planId: string) => {
@@ -113,17 +215,114 @@ export function PricingSection() {
                 ))}
               </ul>
               
-              <Link href={getButtonLink(plan.id)}>
+              {plan.id === 'free' ? (
+                <Link href={user ? "/app" : "/auth/signup"}>
+                  <Button 
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {user ? 'Go to App' : getButtonText(plan.id)}
+                  </Button>
+                </Link>
+              ) : (
                 <Button 
                   className={`w-full ${plan.popular ? 'bg-white text-blue-600 hover:bg-blue-50' : ''}`}
-                  variant={plan.id === 'free' ? 'outline' : plan.popular ? 'secondary' : 'default'}
+                  variant={plan.popular ? 'secondary' : 'default'}
+                  onClick={() => handlePaidPlanClick(plan.id)}
+                  disabled={loading && selectedPlan === plan.id}
                 >
-                  {getButtonText(plan.id)}
+                  {loading && selectedPlan === plan.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    getButtonText(plan.id)
+                  )}
                 </Button>
-              </Link>
+              )}
             </motion.div>
           ))}
         </div>
+        
+        {/* Email Collection Modal for Guest Checkout */}
+        <AnimatePresence>
+          {showEmailModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              onClick={() => !loading && setShowEmailModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">Get {getPlanName(selectedPlan!)}</h3>
+                    <p className="text-sm text-slate-600">Enter your email to continue to checkout</p>
+                  </div>
+                  <button 
+                    onClick={() => !loading && setShowEmailModal(false)}
+                    className="text-slate-400 hover:text-slate-600"
+                    disabled={loading}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl mb-4">
+                  <div className="flex items-center gap-2 text-blue-800 font-medium mb-2">
+                    <Sparkles className="w-5 h-5" />
+                    Quick checkout - no account needed yet!
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    Pay now, create your account after. Your subscription will be automatically linked.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Input
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-12"
+                      disabled={loading}
+                      onKeyDown={(e) => e.key === 'Enter' && handleGuestCheckout()}
+                    />
+                  </div>
+
+                  <Button 
+                    className="w-full" 
+                    onClick={handleGuestCheckout}
+                    disabled={loading || !email}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Redirecting to checkout...
+                      </>
+                    ) : (
+                      'Continue to Payment'
+                    )}
+                  </Button>
+
+                  <p className="text-xs text-center text-slate-500">
+                    Already have an account?{' '}
+                    <Link href="/auth/login" className="text-blue-600 hover:underline">
+                      Sign in first
+                    </Link>
+                  </p>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         {/* Trust badges below pricing */}
         <motion.div

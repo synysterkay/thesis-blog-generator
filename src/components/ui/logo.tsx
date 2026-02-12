@@ -13,13 +13,17 @@ const sizes = {
   xl: { icon: 48, text: 'text-2xl' },
 };
 
+// Brand color
+const BRAND_COLOR = '#2560EA';
+const BRAND_LIGHT = '#4F8FFF'; // lighter accent
+
 export function Logo({ size = 'md', showText = true, className = '' }: LogoProps) {
   const { icon, text } = sizes[size];
   
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <div className="relative">
-        {/* Main document shape */}
+        {/* Document with pen icon */}
         <svg 
           width={icon} 
           height={icon} 
@@ -28,54 +32,43 @@ export function Logo({ size = 'md', showText = true, className = '' }: LogoProps
           xmlns="http://www.w3.org/2000/svg"
           className="drop-shadow-sm"
         >
-          {/* Background glow effect */}
-          <defs>
-            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#3b82f6" />
-              <stop offset="50%" stopColor="#2563eb" />
-              <stop offset="100%" stopColor="#1d4ed8" />
-            </linearGradient>
-            <linearGradient id="shineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#60a5fa" />
-              <stop offset="100%" stopColor="#3b82f6" />
-            </linearGradient>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-          
-          {/* Main document body */}
+          {/* Document body */}
           <path 
-            d="M6 4C6 2.89543 6.89543 2 8 2H18L26 10V28C26 29.1046 25.1046 30 24 30H8C6.89543 30 6 29.1046 6 28V4Z" 
-            fill="url(#logoGradient)"
-            filter="url(#glow)"
+            d="M5 4C5 2.89543 5.89543 2 7 2H17L24 9V28C24 29.1046 23.1046 30 22 30H7C5.89543 30 5 29.1046 5 28V4Z" 
+            fill={BRAND_COLOR}
           />
           
           {/* Folded corner */}
           <path 
-            d="M18 2L26 10H20C18.8954 10 18 9.10457 18 8V2Z" 
-            fill="url(#shineGradient)"
+            d="M17 2L24 9H19C17.8954 9 17 8.10457 17 7V2Z" 
+            fill={BRAND_LIGHT}
           />
           
-          {/* AI Sparkle/Star accent */}
-          <path 
-            d="M16 14L17.5 17.5L21 19L17.5 20.5L16 24L14.5 20.5L11 19L14.5 17.5L16 14Z" 
-            fill="white"
-            opacity="0.95"
-          />
+          {/* Document lines */}
+          <rect x="8" y="13" width="10" height="1.5" rx="0.75" fill="white" opacity="0.8" />
+          <rect x="8" y="17" width="8" height="1.5" rx="0.75" fill="white" opacity="0.6" />
+          <rect x="8" y="21" width="10" height="1.5" rx="0.75" fill="white" opacity="0.8" />
           
-          {/* Small sparkle dots */}
-          <circle cx="22" cy="14" r="1" fill="white" opacity="0.7" />
-          <circle cx="10" cy="25" r="0.8" fill="white" opacity="0.5" />
+          {/* Pen/Edit icon overlay */}
+          <g transform="translate(16, 16)">
+            <path 
+              d="M10.5 1.5L12.5 3.5L5 11L2 12L3 9L10.5 1.5Z" 
+              fill="#FFD700"
+              stroke={BRAND_COLOR}
+              strokeWidth="0.5"
+            />
+            <path 
+              d="M10.5 1.5L12.5 3.5" 
+              stroke={BRAND_COLOR}
+              strokeWidth="1"
+              strokeLinecap="round"
+            />
+          </g>
         </svg>
       </div>
       
       {showText && (
-        <span className={`font-bold ${text} bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent`}>
+        <span className={`font-bold ${text}`} style={{ color: '#2560EA' }}>
           Thesis Generator
         </span>
       )}
@@ -83,7 +76,7 @@ export function Logo({ size = 'md', showText = true, className = '' }: LogoProps
   );
 }
 
-// Icon-only version for small spaces (white version for dark backgrounds)
+// Icon-only version for small spaces
 export function LogoIcon({ size = 'md', variant = 'default' }: { size?: 'sm' | 'md' | 'lg' | 'xl'; variant?: 'default' | 'white' }) {
   const iconSize = sizes[size].icon;
   
@@ -96,27 +89,32 @@ export function LogoIcon({ size = 'md', variant = 'default' }: { size?: 'sm' | '
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Main document body - white */}
+        {/* Document body - white */}
         <path 
-          d="M6 4C6 2.89543 6.89543 2 8 2H18L26 10V28C26 29.1046 25.1046 30 24 30H8C6.89543 30 6 29.1046 6 28V4Z" 
+          d="M5 4C5 2.89543 5.89543 2 7 2H17L24 9V28C24 29.1046 23.1046 30 22 30H7C5.89543 30 5 29.1046 5 28V4Z" 
           fill="white"
         />
         
         {/* Folded corner */}
         <path 
-          d="M18 2L26 10H20C18.8954 10 18 9.10457 18 8V2Z" 
+          d="M17 2L24 9H19C17.8954 9 17 8.10457 17 7V2Z" 
           fill="rgba(255,255,255,0.7)"
         />
         
-        {/* AI Sparkle/Star accent - blue on white */}
-        <path 
-          d="M16 14L17.5 17.5L21 19L17.5 20.5L16 24L14.5 20.5L11 19L14.5 17.5L16 14Z" 
-          fill="#2563eb"
-        />
+        {/* Document lines */}
+        <rect x="8" y="13" width="10" height="1.5" rx="0.75" fill={BRAND_COLOR} opacity="0.8" />
+        <rect x="8" y="17" width="8" height="1.5" rx="0.75" fill={BRAND_COLOR} opacity="0.6" />
+        <rect x="8" y="21" width="10" height="1.5" rx="0.75" fill={BRAND_COLOR} opacity="0.8" />
         
-        {/* Small sparkle dots */}
-        <circle cx="22" cy="14" r="1" fill="#3b82f6" />
-        <circle cx="10" cy="25" r="0.8" fill="#60a5fa" />
+        {/* Pen/Edit icon overlay */}
+        <g transform="translate(16, 16)">
+          <path 
+            d="M10.5 1.5L12.5 3.5L5 11L2 12L3 9L10.5 1.5Z" 
+            fill="#FFD700"
+            stroke="white"
+            strokeWidth="0.5"
+          />
+        </g>
       </svg>
     );
   }
@@ -130,36 +128,38 @@ export function LogoIcon({ size = 'md', variant = 'default' }: { size?: 'sm' | '
       xmlns="http://www.w3.org/2000/svg"
       className="drop-shadow-sm"
     >
-      <defs>
-        <linearGradient id="logoGradientIcon" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#3b82f6" />
-          <stop offset="50%" stopColor="#2563eb" />
-          <stop offset="100%" stopColor="#1d4ed8" />
-        </linearGradient>
-        <linearGradient id="shineGradientIcon" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#60a5fa" />
-          <stop offset="100%" stopColor="#3b82f6" />
-        </linearGradient>
-      </defs>
-      
+      {/* Document body */}
       <path 
-        d="M6 4C6 2.89543 6.89543 2 8 2H18L26 10V28C26 29.1046 25.1046 30 24 30H8C6.89543 30 6 29.1046 6 28V4Z" 
-        fill="url(#logoGradientIcon)"
+        d="M5 4C5 2.89543 5.89543 2 7 2H17L24 9V28C24 29.1046 23.1046 30 22 30H7C5.89543 30 5 29.1046 5 28V4Z" 
+        fill={BRAND_COLOR}
       />
       
+      {/* Folded corner */}
       <path 
-        d="M18 2L26 10H20C18.8954 10 18 9.10457 18 8V2Z" 
-        fill="url(#shineGradientIcon)"
+        d="M17 2L24 9H19C17.8954 9 17 8.10457 17 7V2Z" 
+        fill={BRAND_LIGHT}
       />
       
-      <path 
-        d="M16 14L17.5 17.5L21 19L17.5 20.5L16 24L14.5 20.5L11 19L14.5 17.5L16 14Z" 
-        fill="white"
-        opacity="0.95"
-      />
+      {/* Document lines */}
+      <rect x="8" y="13" width="10" height="1.5" rx="0.75" fill="white" opacity="0.8" />
+      <rect x="8" y="17" width="8" height="1.5" rx="0.75" fill="white" opacity="0.6" />
+      <rect x="8" y="21" width="10" height="1.5" rx="0.75" fill="white" opacity="0.8" />
       
-      <circle cx="22" cy="14" r="1" fill="white" opacity="0.7" />
-      <circle cx="10" cy="25" r="0.8" fill="white" opacity="0.5" />
+      {/* Pen/Edit icon overlay */}
+      <g transform="translate(16, 16)">
+        <path 
+          d="M10.5 1.5L12.5 3.5L5 11L2 12L3 9L10.5 1.5Z" 
+          fill="#FFD700"
+          stroke={BRAND_COLOR}
+          strokeWidth="0.5"
+        />
+        <path 
+          d="M10.5 1.5L12.5 3.5" 
+          stroke={BRAND_COLOR}
+          strokeWidth="1"
+          strokeLinecap="round"
+        />
+      </g>
     </svg>
   );
 }

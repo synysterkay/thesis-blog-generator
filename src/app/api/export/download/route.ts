@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak, TableOfContents, StyleLevel, AlignmentType, Footer, PageNumber, NumberFormat } from 'docx';
+import { getSubscriptionStatus } from '@/lib/subscription';
 
 export async function POST(request: Request) {
   try {
@@ -15,6 +16,26 @@ export async function POST(request: Request) {
 
     if (!thesisId || !format) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Check subscription status - EXPORT PROTECTION
+    const subscriptionStatus = await getSubscriptionStatus(user.id);
+    
+    // Check if user has a single export unlock for this thesis
+    const { data: exportUnlock } = await supabase
+      .from('export_unlocks')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('thesis_id', thesisId)
+      .maybeSingle();
+
+    // Block export for free users without unlock
+    if (!subscriptionStatus.isPremium && !exportUnlock) {
+      return NextResponse.json({ 
+        error: 'Export locked',
+        code: 'EXPORT_LOCKED',
+        message: 'Upgrade to Pro or purchase one-time export to download your thesis.'
+      }, { status: 403 });
     }
 
     // Fetch thesis

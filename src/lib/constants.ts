@@ -6,11 +6,11 @@ export const PRICING_PLANS = [
     interval: 'month' as const,
     popular: false,
     features: [
-      '1 thesis per month',
-      'Up to 3 chapters',
-      '1 table & 1 chart',
-      '2 reference uploads (10MB)',
-      'PDF & DOCX export',
+      'Unlimited thesis generation',
+      'Up to 10 chapters',
+      'Tables & charts included',
+      '2 reference uploads',
+      '7-day thesis access',
     ],
   },
   {
@@ -24,7 +24,8 @@ export const PRICING_PLANS = [
       'Unlimited chapters',
       'Unlimited tables & charts',
       '10 reference uploads (20MB)',
-      'PDF, DOCX & LaTeX export',
+      '✅ PDF, DOCX & LaTeX export',
+      '✅ Unlimited access',
     ],
   },
   {
@@ -60,19 +61,20 @@ export const PRICING_PLANS = [
 ];
 
 export const FREE_TIER_FEATURES = [
-  '1 thesis per month',
-  '3 chapters max',
-  '1 table & 1 chart',
+  'Unlimited thesis generation',
+  'Up to 10 chapters',
+  'Tables & charts included',
   '2 reference uploads',
-  'PDF & DOCX export',
+  'View online (export locked)',
+  '7-day access window',
 ];
 
 export const PAYWALL_FEATURES = [
-  'Generate unlimited theses',
-  'Unlimited chapters per thesis',
-  'Unlimited tables & charts',
-  '10 reference document uploads',
-  'PDF, DOCX & LaTeX export',
+  'Export to PDF, DOCX & LaTeX',
+  'Unlimited thesis access',
+  'No expiry on theses',
+  'Priority AI processing',
+  'Copy & paste enabled',
 ];
 
 export const TESTIMONIALS = [
@@ -116,20 +118,20 @@ export const FAQ_ITEMS = [
     answer: "Absolutely! You have full control over every section. Edit text, regenerate specific parts, add your own content, modify tables and charts - it's your thesis to customize.",
   },
   {
+    question: 'What can I do with the free tier?',
+    answer: 'Free users can generate unlimited complete theses with all chapters, tables, and charts. You can view and edit your thesis content. Export (PDF/DOCX/LaTeX) requires a Pro subscription or one-time unlock. Free theses are accessible for 7 days.',
+  },
+  {
+    question: 'How does the export unlock work?',
+    answer: 'Pro subscribers can export unlimited theses. Free users can purchase one-time export access ($4.99) for individual theses, which unlocks PDF, DOCX, and LaTeX downloads permanently for that thesis.',
+  },
+  {
     question: 'What academic fields are supported?',
     answer: 'We support all major academic fields including Computer Science, Business, Psychology, Engineering, Medicine, Law, Social Sciences, Humanities, and more. Our AI adapts its writing style to your field.',
   },
   {
     question: 'How long does generation take?',
     answer: 'A complete 90+ page thesis typically takes 20-40 minutes to generate, depending on complexity. You can watch the progress in real-time and start editing sections as they are completed.',
-  },
-  {
-    question: 'What export formats are available?',
-    answer: 'All users can export to PDF and Microsoft Word (DOCX). Pro users also get LaTeX export for academic submissions. All exports maintain proper formatting, tables, charts, and citations.',
-  },
-  {
-    question: 'Is there a word or page limit?',
-    answer: 'Pro users have no limits. Generate theses of any length with unlimited chapters. Free users can generate 1 thesis per month with up to 3 chapters, 1 table, and 1 chart.',
   },
   {
     question: 'Is my data secure and private?',

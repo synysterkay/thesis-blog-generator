@@ -64,10 +64,8 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-            <LogoIcon size="md" variant="white" />
-          </div>
-          <span className="font-bold text-2xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Thesis Generator</span>
+          <LogoIcon size="lg" />
+          <span className="font-bold text-2xl" style={{ color: '#2560EA' }}>Thesis Generator</span>
         </Link>
 
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Reset your password</h1>

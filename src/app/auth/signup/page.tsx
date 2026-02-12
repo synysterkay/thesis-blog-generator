@@ -1,43 +1,102 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Check } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, Check, Crown, Sparkles, Loader2 } from 'lucide-react';
 import { LogoIcon } from '@/components/ui/logo';
 import { toast } from 'sonner';
+import { trackCompletePayment, identifyUser } from '@/lib/tiktok';
 
-export default function SignupPage() {
+function SignupContent() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Check if user just paid (guest checkout flow)
+  const isPaidUser = searchParams.get('paid') === 'true';
+  const paidPlan = searchParams.get('plan');
+
+  // Pre-fill email from URL if provided (from LemonSqueezy checkout)
+  useEffect(() => {
+    const emailParam = searchParams.get('email');
+    if (emailParam) {
+      setEmail(decodeURIComponent(emailParam));
+    }
+  }, [searchParams]);
+
+  // Track TikTok CompletePayment when user arrives after payment
+  useEffect(() => {
+    if (isPaidUser) {
+      const emailParam = searchParams.get('email');
+      if (emailParam) {
+        identifyUser({ email: decodeURIComponent(emailParam) });
+      }
+      
+      const prices: Record<string, number> = { lifetime: 199.99, yearly: 79.99, monthly: 9.99, export: 4.99 };
+      const names: Record<string, string> = { lifetime: 'Lifetime Access', yearly: 'Pro Yearly', monthly: 'Pro Monthly', export: 'One-Time Export' };
+      const plan = paidPlan || 'monthly';
+      
+      trackCompletePayment({
+        contentId: `thesis_${plan}`,
+        contentName: names[plan] || plan,
+        value: prices[plan] || 9.99
+      });
+    }
+  }, [isPaidUser, paidPlan, searchParams]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: name,
+            // Mark this user as having paid before signup
+            paid_before_signup: isPaidUser ? 'true' : 'false',
+            paid_plan: paidPlan || null,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback${isPaidUser ? '?link_subscription=true' : ''}`,
         },
       });
 
       if (error) throw error;
 
-      toast.success('Check your email to confirm your account');
+      // If user paid before signup, try to link subscription immediately
+      if (isPaidUser && data.user) {
+        try {
+          await fetch('/api/subscription/link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              userId: data.user.id, 
+              email: email,
+              planType: paidPlan 
+            }),
+          });
+        } catch (linkError) {
+          console.error('Failed to link subscription:', linkError);
+          // Don't fail signup, subscription will be linked on email confirmation
+        }
+      }
+
+      if (isPaidUser) {
+        toast.success('Account created! Check your email to activate your Pro subscription.');
+      } else {
+        toast.success('Check your email to confirm your account');
+      }
       router.push('/auth/verify');
     } catch (error: any) {
       toast.error(error.message || 'Failed to sign up');
@@ -51,7 +110,7 @@ export default function SignupPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback${isPaidUser ? '?link_subscription=true&email=' + encodeURIComponent(email) : ''}`,
         },
       });
 
@@ -61,7 +120,13 @@ export default function SignupPage() {
     }
   };
 
-  const benefits = [
+  const benefits = isPaidUser ? [
+    'Unlimited thesis generations',
+    'All export formats (PDF, DOCX, LaTeX)',
+    'Priority AI processing',
+    'No thesis expiration',
+    'Premium support',
+  ] : [
     '1 free thesis generation',
     'Export to PDF, DOCX, LaTeX',
     'AI-powered humanization',
@@ -71,25 +136,36 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-blue-600 to-indigo-700 items-center justify-center p-12">
+      <div className={`hidden lg:flex flex-1 ${isPaidUser ? 'bg-gradient-to-br from-amber-500 to-orange-600' : 'bg-gradient-to-br from-blue-600 to-indigo-700'} items-center justify-center p-12`}>
         <div className="max-w-md text-white">
-          <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mb-8">
-            <LogoIcon size="xl" variant="white" />
+          <div className={`w-20 h-20 ${isPaidUser ? 'bg-white/30' : 'bg-white/20'} rounded-2xl flex items-center justify-center mb-8`}>
+            {isPaidUser ? <Crown className="w-10 h-10" /> : <LogoIcon size="xl" variant="white" />}
           </div>
-          <h2 className="text-3xl font-bold mb-4">Start Creating Your Thesis Today</h2>
-          <p className="text-blue-100 text-lg mb-8">
-            Join thousands of researchers who have transformed their writing process.
+          <h2 className="text-3xl font-bold mb-4">
+            {isPaidUser ? '🎉 Payment Successful!' : 'Start Creating Your Thesis Today'}
+          </h2>
+          <p className={`${isPaidUser ? 'text-amber-100' : 'text-blue-100'} text-lg mb-8`}>
+            {isPaidUser 
+              ? 'Just one more step! Create your account to activate your Pro subscription.'
+              : 'Join thousands of researchers who have transformed their writing process.'}
           </p>
           <ul className="space-y-4">
             {benefits.map((benefit) => (
               <li key={benefit} className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                  <Check className="w-4 h-4" />
+                <div className={`w-6 h-6 rounded-full ${isPaidUser ? 'bg-white/30' : 'bg-white/20'} flex items-center justify-center`}>
+                  {isPaidUser ? <Sparkles className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                 </div>
                 <span>{benefit}</span>
               </li>
             ))}
           </ul>
+          {isPaidUser && (
+            <div className="mt-8 p-4 bg-white/20 rounded-xl">
+              <p className="text-sm font-medium">
+                💡 Use the same email you used for payment to automatically activate your subscription.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -98,15 +174,29 @@ export default function SignupPage() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-              <LogoIcon size="md" variant="white" />
-            </div>
-            <span className="font-bold text-2xl bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Thesis Generator</span>
+            <LogoIcon size="lg" />
+            <span className="font-bold text-2xl" style={{ color: '#2560EA' }}>Thesis Generator</span>
           </Link>
 
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Create your account</h1>
+          {isPaidUser && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
+              <div className="flex items-center gap-2 text-amber-800 font-medium mb-1">
+                <Crown className="w-5 h-5" />
+                Pro {paidPlan === 'lifetime' ? 'Lifetime' : paidPlan === 'yearly' ? 'Yearly' : 'Monthly'} Plan Purchased!
+              </div>
+              <p className="text-sm text-amber-700">
+                Create your account below to activate your subscription.
+              </p>
+            </div>
+          )}
+
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            {isPaidUser ? 'Complete your account' : 'Create your account'}
+          </h1>
           <p className="text-slate-600 mb-8">
-            Get started with 1 free thesis generation
+            {isPaidUser 
+              ? 'Enter your details to activate your Pro subscription'
+              : 'Get started with 1 free thesis generation'}
           </p>
 
           {/* Google Sign Up */}
@@ -209,5 +299,21 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SignupLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+    </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupLoading />}>
+      <SignupContent />
+    </Suspense>
   );
 }

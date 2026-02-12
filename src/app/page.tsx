@@ -11,6 +11,7 @@ import {
   CTASection,
   Footer,
 } from '@/components/landing';
+import { MobileAppPopup } from '@/components/mobile-app-popup';
 
 export default function HomePage() {
   return (
@@ -26,6 +27,7 @@ export default function HomePage() {
       <FAQSection />
       <CTASection />
       <Footer />
+      <MobileAppPopup />
     </main>
   );
 }

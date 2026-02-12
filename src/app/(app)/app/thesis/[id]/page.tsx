@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, use, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,9 @@ import { Progress } from '@/components/ui/progress';
 import { Modal, ModalHeader } from '@/components/ui/modal';
 import { PDFExporter } from '@/components/thesis/pdf-exporter';
 import { PDFEditor } from '@/components/thesis/pdf-editor';
+import { ThesisHTMLPreview } from '@/components/thesis/thesis-html-preview';
+import { ExportPaywall } from '@/components/export-paywall';
+import { ThesisExpiryTimer } from '@/components/thesis-expiry-timer';
 import { 
   ArrowLeft,
   Play,
@@ -25,11 +28,20 @@ import {
   Sparkles,
   Trash2,
   Bell,
-  Edit
+  Edit,
+  Shield,
+  Eye,
+  X
 } from 'lucide-react';
 import { Thesis, Chapter } from '@/types';
 import { toast } from 'sonner';
 import Link from 'next/link';
+
+// Extended Thesis type with new fields
+interface ThesisWithExpiry extends Thesis {
+  expires_at?: string | null;
+  copy_protected?: boolean;
+}
 
 interface ChapterContent {
   subchapters?: string[];
@@ -68,7 +80,8 @@ const sendBrowserNotification = (title: string, body: string, icon?: string) => 
 
 export default function ThesisPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const [thesis, setThesis] = useState<Thesis | null>(null);
+  const searchParams = useSearchParams();
+  const [thesis, setThesis] = useState<ThesisWithExpiry | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -76,9 +89,13 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
   const [deleting, setDeleting] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportPaywallOpen, setExportPaywallOpen] = useState(false);
   const [exporting, setExporting] = useState<'pdf' | 'docx' | 'latex' | null>(null);
   const [showPDFExporter, setShowPDFExporter] = useState(false);
   const [showPDFEditor, setShowPDFEditor] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [hasExportUnlock, setHasExportUnlock] = useState(false);;
   const previousStatusRef = useRef<string | null>(null);
   const router = useRouter();
   const { user } = useAuth();
@@ -127,9 +144,72 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
     }
   };
 
+  // Check for export unlock from URL params (after one-time purchase)
+  useEffect(() => {
+    if (searchParams.get('export') === 'unlocked') {
+      // Refresh export unlock status from database to confirm payment was processed
+      const confirmExportUnlock = async () => {
+        if (!user) return;
+        
+        // Wait a moment for webhook to process
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const { data: exportUnlock } = await supabase
+          .from('export_unlocks')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('thesis_id', resolvedParams.id)
+          .maybeSingle();
+        
+        if (exportUnlock) {
+          setHasExportUnlock(true);
+          toast.success('🎉 Export unlocked! You can now download your thesis.');
+        } else {
+          // Retry once more after another delay
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          const { data: retryUnlock } = await supabase
+            .from('export_unlocks')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('thesis_id', resolvedParams.id)
+            .maybeSingle();
+          
+          if (retryUnlock) {
+            setHasExportUnlock(true);
+            toast.success('🎉 Export unlocked! You can now download your thesis.');
+          } else {
+            toast.info('Processing your payment... Please refresh in a moment if export is still locked.');
+          }
+        }
+      };
+      confirmExportUnlock();
+    }
+  }, [searchParams, user, resolvedParams.id, supabase]);
+
   useEffect(() => {
     const fetchThesis = async () => {
       if (!user) return;
+
+      // Check subscription status
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('status, plan_type')
+        .eq('user_id', user.id)
+        .single();
+      
+      const userIsPremium = subscription?.status === 'active' && 
+        subscription?.plan_type && subscription.plan_type !== 'free';
+      setIsPremium(userIsPremium);
+
+      // Check for export unlock for this thesis
+      const { data: exportUnlock } = await supabase
+        .from('export_unlocks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('thesis_id', resolvedParams.id)
+        .maybeSingle();
+      
+      setHasExportUnlock(!!exportUnlock);
 
       // Fetch thesis
       const { data: thesisData, error: thesisError } = await supabase
@@ -421,6 +501,13 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
       return;
     }
 
+    // Check export permission for all formats
+    if (!isPremium && !hasExportUnlock) {
+      setExportModalOpen(false);
+      setExportPaywallOpen(true);
+      return;
+    }
+
     // For PDF, use client-side generation
     if (format === 'pdf') {
       setExportModalOpen(false);
@@ -439,6 +526,12 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Export failed' }));
+        // Handle export locked error - show paywall
+        if (errorData.code === 'EXPORT_LOCKED') {
+          setExportModalOpen(false);
+          setExportPaywallOpen(true);
+          return;
+        }
         throw new Error(errorData.error || 'Export failed');
       }
 
@@ -649,47 +742,119 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                   </Button>
                 )}
               </div>
+            ) : (thesis.status === 'completed' || thesis.status === 'exported') ? (
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={() => setShowPreview(true)}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md"
+                >
+                  <Eye className="mr-1.5 w-3.5 h-3.5" />
+                  📄 Preview Full Thesis
+                </Button>
+              </div>
             ) : null}
 
           </div>
         </div>
       </div>
 
+      {/* Expiry Timer for Free Users */}
+      {!isPremium && thesis.expires_at && (
+        <div className="mb-5">
+          <ThesisExpiryTimer 
+            expiresAt={thesis.expires_at}
+            onExpired={() => {
+              toast.error('This thesis has expired. Upgrade to Pro for unlimited access.');
+            }}
+          />
+        </div>
+      )}
+
       {/* Prominent Export Banner when thesis is complete - placed at top */}
       {(thesis.status === 'completed' || thesis.status === 'exported') && (
-        <Card className="p-5 mb-5 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3 text-center sm:text-left">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <Check className="w-6 h-6 text-green-600" />
+        <>
+          {/* Premium users or users with export unlock - show normal export */}
+          {(isPremium || hasExportUnlock) ? (
+            <Card className="p-5 mb-5 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3 text-center sm:text-left">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <Check className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-green-800">🎉 Your Thesis is Ready!</h3>
+                    <p className="text-sm text-green-600">Download your complete thesis in PDF or DOCX format</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button 
+                    size="lg"
+                    onClick={() => setExportModalOpen(true)}
+                    className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/30 animate-[bounce_1s_ease-in-out_1]"
+                  >
+                    <Download className="mr-2 w-5 h-5" />
+                    Export Now
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={deleteThesis} 
+                    disabled={deleting} 
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                    title="Delete thesis"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-green-800">🎉 Your Thesis is Ready!</h3>
-                <p className="text-sm text-green-600">Download your complete thesis in PDF or DOCX format</p>
+            </Card>
+          ) : (
+            /* Free users - show locked export banner */
+            <Card className="p-5 mb-5 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3 text-center sm:text-left">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
+                    <Lock className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-amber-800">🔒 Export Locked</h3>
+                    <p className="text-sm text-amber-600">Your thesis is ready! Unlock export to download.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button 
+                    size="lg"
+                    onClick={() => setExportPaywallOpen(true)}
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/30"
+                  >
+                    <Sparkles className="mr-2 w-5 h-5" />
+                    Unlock Export
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={deleteThesis} 
+                    disabled={deleting} 
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                    title="Delete thesis"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button 
-                size="lg"
-                onClick={() => setExportModalOpen(true)}
-                className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/30 animate-[bounce_1s_ease-in-out_1]"
-              >
-                <Download className="mr-2 w-5 h-5" />
-                Export Now
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={deleteThesis} 
-                disabled={deleting} 
-                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                title="Delete thesis"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </Card>
+              {/* Trust indicator */}
+              <div className="mt-3 pt-3 border-t border-amber-200 flex items-center justify-center gap-4 text-xs text-amber-700">
+                <span className="flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5" />
+                  One-time: $4.99
+                </span>
+                <span>•</span>
+                <span>Or Pro: $9.99/mo unlimited</span>
+              </div>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Progress */}
@@ -1106,6 +1271,123 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
             toast.success('PDF downloaded!');
           }}
         />
+      )}
+
+      {/* Full Thesis Preview Modal */}
+      {showPreview && thesis && (
+        <div className="fixed inset-0 bg-black/60 z-50 overflow-y-auto">
+          <div className="min-h-screen py-8 px-4">
+            {/* Close button */}
+            <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
+              <h2 className="text-white font-semibold">Full Thesis Preview</h2>
+              <div className="flex gap-3">
+                {(isPremium || hasExportUnlock) ? (
+                  <Button 
+                    onClick={() => {
+                      setShowPreview(false);
+                      setExportModalOpen(true);
+                    }}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Download className="mr-2 w-4 h-4" />
+                    Export
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={() => {
+                      setShowPreview(false);
+                      setExportPaywallOpen(true);
+                    }}
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                  >
+                    <Lock className="mr-2 w-4 h-4" />
+                    Unlock Export
+                  </Button>
+                )}
+                <Button 
+                  variant="secondary"
+                  onClick={() => setShowPreview(false)}
+                >
+                  <X className="mr-2 w-4 h-4" />
+                  Close
+                </Button>
+              </div>
+            </div>
+            
+            {/* Preview content - protect copy for free users */}
+            <div className={!isPremium && thesis.copy_protected ? 'thesis-content' : ''}>
+              <ThesisHTMLPreview
+                thesis={{
+                  title: thesis.title,
+                  academic_field: thesis.academic_field || undefined,
+                  topic: thesis.topic || undefined,
+                  chapters: chapters.filter(ch => ch.status === 'completed').map(ch => ({
+                    chapter_number: ch.chapter_number,
+                    title: ch.title,
+                    content: ch.content,
+                  })),
+                }}
+                showWatermark={!isPremium && !hasExportUnlock}
+              />
+            </div>
+            
+            {/* Bottom action bar */}
+            <div className="max-w-4xl mx-auto mt-6 p-4 bg-white rounded-lg shadow-lg flex justify-between items-center">
+              <p className="text-sm text-slate-600">
+                {isPremium || hasExportUnlock 
+                  ? '✓ Export enabled - Download your thesis in PDF, DOCX, or LaTeX format'
+                  : '🔒 Export locked - Unlock to download your thesis'}
+              </p>
+              {(isPremium || hasExportUnlock) ? (
+                <Button 
+                  onClick={() => {
+                    setShowPreview(false);
+                    setExportModalOpen(true);
+                  }}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Download className="mr-2 w-4 h-4" />
+                  Export Now
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => {
+                    setShowPreview(false);
+                    setExportPaywallOpen(true);
+                  }}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                >
+                  <Sparkles className="mr-2 w-4 h-4" />
+                  Unlock Export ($4.99)
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Paywall for Free Users */}
+      <ExportPaywall
+        isOpen={exportPaywallOpen}
+        onClose={() => setExportPaywallOpen(false)}
+        thesisTitle={thesis?.title || ''}
+        thesisId={resolvedParams.id}
+        expiresAt={thesis?.expires_at ? new Date(thesis.expires_at) : null}
+      />
+
+      {/* Copy Protection CSS for Free Users */}
+      {!isPremium && thesis?.copy_protected && (
+        <style jsx global>{`
+          .thesis-content {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+          }
+          .thesis-content::selection {
+            background: transparent;
+          }
+        `}</style>
       )}
     </div>
   );

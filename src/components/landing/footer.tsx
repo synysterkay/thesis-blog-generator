@@ -27,9 +27,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <LogoIcon size="sm" variant="white" />
-              </div>
+              <LogoIcon size="md" variant="white" />
               <span className="font-bold text-lg">Thesis Generator</span>
             </Link>
             <p className="text-slate-400 text-sm mb-4">

@@ -46,7 +46,9 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
   }, [posts, selectedCategory, searchQuery]);
 
   const featuredPosts = filteredPosts.filter(post => post.featured).slice(0, 2);
-  const regularPosts = filteredPosts.filter(post => !post.featured);
+  // Show ALL posts in Latest Articles (including featured ones that didn't fit in Featured section)
+  const featuredSlugs = new Set(featuredPosts.map(p => p.slug));
+  const regularPosts = filteredPosts.filter(post => !featuredSlugs.has(post.slug));
   
   // Pagination
   const totalPages = Math.ceil(regularPosts.length / POSTS_PER_PAGE);

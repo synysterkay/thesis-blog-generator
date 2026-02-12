@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
-import { Lock, Check, ArrowRight, Sparkles } from 'lucide-react';
+import { Lock, Check, ArrowRight, Sparkles, Download, Shield } from 'lucide-react';
 
 interface PaywallModalProps {
   isOpen: boolean;
@@ -12,11 +12,11 @@ interface PaywallModalProps {
 }
 
 const benefits = [
-  'Unlimited thesis generations',
+  'Export to PDF, DOCX & LaTeX',
+  'No thesis expiry (unlimited access)',
+  'Copy & paste enabled',
   'Priority AI processing',
-  'Export to all formats',
   'Premium support',
-  'Auto tables & charts',
 ];
 
 export function PaywallModal({ isOpen, onClose, feature }: PaywallModalProps) {
@@ -30,13 +30,13 @@ export function PaywallModal({ isOpen, onClose, feature }: PaywallModalProps) {
 
         {/* Title */}
         <h3 className="text-2xl font-bold text-slate-900 mb-2">
-          Upgrade to Continue
+          Upgrade to Pro
         </h3>
         
         <p className="text-slate-600 mb-6">
           {feature 
             ? `You need a Pro subscription to ${feature}.`
-            : "You've used your free thesis. Upgrade for unlimited access."
+            : "Unlock full access to all features including export."
           }
         </p>
 
@@ -75,9 +75,10 @@ export function PaywallModal({ isOpen, onClose, feature }: PaywallModalProps) {
         </div>
 
         {/* Trust badges */}
-        <p className="text-xs text-slate-500 mt-4">
-          🔒 Secure checkout • Cancel anytime • 7-day money-back guarantee
-        </p>
+        <div className="flex items-center justify-center gap-2 text-xs text-slate-500 mt-4">
+          <Shield className="w-3.5 h-3.5" />
+          <span>Secure checkout • Cancel anytime • 30-day money-back guarantee</span>
+        </div>
       </div>
     </Modal>
   );

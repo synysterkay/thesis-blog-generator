@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createCheckout, PlanType } from '@/lib/lemonsqueezy';
 import { NextResponse } from 'next/server';
+import { trackServerInitiateCheckout } from '@/lib/tiktok-server';
 
 export async function POST(request: Request) {
   try {
@@ -27,6 +28,21 @@ export async function POST(request: Request) {
       user.email!,
       planId as PlanType
     );
+
+    // Track InitiateCheckout server-side (bypasses ad blockers)
+    const priceMap: Record<string, number> = {
+      monthly: 9.99,
+      yearly: 79.99,
+      lifetime: 199.99,
+    };
+    await trackServerInitiateCheckout({
+      email: user.email,
+      userId: user.id,
+      contentId: `thesis_${planId}`,
+      contentName: `Thesis Generator ${planId}`,
+      value: priceMap[planId] || 9.99,
+      currency: 'USD',
+    });
 
     return NextResponse.json({ url: checkoutUrl });
   } catch (error: unknown) {

@@ -412,8 +412,8 @@ export default function NewThesisPage() {
             target_length: targetLength,
             chapter_titles: chapters,
             outlines: outlinesWithVisuals,
-            enableTables: subscription?.isActive ? enableTables : false,
-            enableCharts: subscription?.isActive ? enableCharts : false,
+            enableTables,
+            enableCharts,
             referenceDocumentIds: referenceDocuments.filter(d => d.status === 'completed').map(d => d.id),
           },
         })
@@ -739,21 +739,6 @@ export default function NewThesisPage() {
                   </Button>
                 </div>
               )}
-
-              {/* Free tier notice */}
-              {!subscription?.isActive && chapters.length > 3 && (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <Lock className="w-4 h-4 text-amber-600 mt-0.5" />
-                    <div>
-                      <h4 className="text-sm font-medium text-amber-800">Free Plan Limitation</h4>
-                      <p className="text-xs text-amber-700 mt-0.5">
-                        Free users can generate up to 3 chapters. <Link href="/app/upgrade" className="underline font-medium">Upgrade to Pro</Link> to generate all chapters.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -792,20 +777,6 @@ export default function NewThesisPage() {
               {/* Pro feature notice for tables/charts */}
               {!subscription?.isActive && (
                 <div className="mb-3 p-2.5 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <Table className="w-3.5 h-3.5 text-emerald-600" />
-                      <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <span className="text-xs text-slate-700">
-                        <span className="font-medium">Free:</span> 1 table & 1 chart. For more,{' '}
-                        <Link href="/app/upgrade" className="text-blue-600 hover:underline font-medium">
-                          upgrade to Pro
-                        </Link>
-                      </span>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -837,23 +808,20 @@ export default function NewThesisPage() {
                   {chapters.map((chapter, chapterIndex) => {
                     const chapterNum = (chapterIndex + 1).toString();
                     const chapterOutlines = outlines[chapterNum] || [];
-                    const isLocked = !subscription?.isActive && chapterIndex >= 3;
                     
                     return (
                       <div 
                         key={chapterIndex} 
-                        className={`border rounded-lg overflow-hidden ${isLocked ? 'opacity-60' : ''}`}
+                        className="border rounded-lg overflow-hidden"
                       >
-                        <div className={`p-2.5 flex items-center gap-2 ${isLocked ? 'bg-slate-100' : 'bg-slate-50'}`}>
+                        <div className="p-2.5 flex items-center gap-2 bg-slate-50">
                           <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded text-xs font-medium flex items-center justify-center">
                             {chapterIndex + 1}
                           </span>
                           <span className="flex-1 text-sm font-medium text-slate-900">{chapter}</span>
-                          {isLocked && <Lock className="w-3.5 h-3.5 text-slate-400" />}
                         </div>
                         
-                        {!isLocked && (
-                          <div className="p-2.5 space-y-1.5">
+                        <div className="p-2.5 space-y-1.5">
                             {chapterOutlines.map((subchapter, subIndex) => {
                               const visuals = outlineVisuals[chapterNum]?.[subIndex];
                               const hasTable = visuals?.hasTable;
@@ -949,31 +917,10 @@ export default function NewThesisPage() {
                               <span className="text-sm leading-none">+</span> Add subchapter
                             </button>
                           </div>
-                        )}
                         
-                        {isLocked && (
-                          <div className="p-2.5 text-xs text-slate-500 italic">
-                            Upgrade to Pro to generate this chapter
-                          </div>
-                        )}
                       </div>
                     );
                   })}
-                </div>
-              )}
-
-              {/* Free tier notice */}
-              {!subscription?.isActive && chapters.length > 3 && (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <Lock className="w-4 h-4 text-amber-600 mt-0.5" />
-                    <div>
-                      <h4 className="text-sm font-medium text-amber-800">Free Plan Limitation</h4>
-                      <p className="text-xs text-amber-700 mt-0.5">
-                        Free users can generate up to 3 chapters. <Link href="/app/upgrade" className="underline font-medium">Upgrade to Pro</Link> to generate all chapters.
-                      </p>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -1034,19 +981,17 @@ export default function NewThesisPage() {
                   <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1.5">Chapters & Outlines ({chapters.length} chapters)</p>
                   <div className="space-y-2">
                     {chapters.map((chapter, index) => {
-                      const isLocked = !subscription?.isActive && index >= 3;
                       const chapterNum = (index + 1).toString();
                       const chapterOutlines = outlines[chapterNum] || [];
                       
                       return (
-                        <div key={index} className={`${isLocked ? 'opacity-50' : ''}`}>
+                        <div key={index}>
                           <div className="flex items-center gap-1.5 mb-0.5">
-                            {isLocked && <Lock className="w-2.5 h-2.5 text-slate-400" />}
                             <span className="text-xs font-medium text-slate-900">
                               {index + 1}. {chapter}
                             </span>
                           </div>
-                          {!isLocked && chapterOutlines.length > 0 && (
+                          {chapterOutlines.length > 0 && (
                             <div className="pl-4 space-y-0.5">
                               {chapterOutlines.map((sub, i) => {
                                 const visuals = outlineVisuals[chapterNum]?.[i];

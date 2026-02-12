@@ -22,7 +22,8 @@ import {
   Eye,
   Save,
   RotateCcw,
-  Wand2
+  Wand2,
+  Shield
 } from 'lucide-react';
 import { Thesis, Chapter } from '@/types';
 import { toast } from 'sonner';
@@ -30,6 +31,12 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import { ChartRenderer, ChartThemeSelector, ChartTheme } from '@/components/thesis/chart-renderer';
 import { TableRenderer, TableStyleSelector, TableStyle } from '@/components/thesis/table-renderer';
+
+// Extended Thesis type with copy protection
+interface ThesisWithProtection extends Thesis {
+  copy_protected?: boolean;
+  expires_at?: string | null;
+}
 
 // Random style selectors for variety
 const TABLE_STYLES: TableStyle[] = ['academic', 'modern', 'minimal', 'striped', 'bordered'];
@@ -57,11 +64,12 @@ export default function ChapterPage({
   params: Promise<{ id: string; chapterId: string }> 
 }) {
   const resolvedParams = use(params);
-  const [thesis, setThesis] = useState<Thesis | null>(null);
+  const [thesis, setThesis] = useState<ThesisWithProtection | null>(null);
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [parsedContent, setParsedContent] = useState<ChapterContent>({});
   const [loading, setLoading] = useState(true);
+  const [isPremium, setIsPremium] = useState(false);
   
   // Editing state
   const [isEditing, setIsEditing] = useState(false);
@@ -110,6 +118,17 @@ export default function ChapterPage({
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
+
+      // Check subscription status
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('status, plan_type')
+        .eq('user_id', user.id)
+        .single();
+      
+      const userIsPremium = subscription?.status === 'active' && 
+        subscription?.plan_type && subscription.plan_type !== 'free';
+      setIsPremium(userIsPremium);
 
       const { data: thesisData, error: thesisError } = await supabase
         .from('theses')
@@ -763,6 +782,34 @@ export default function ChapterPage({
           </Button>
         )}
       </div>
+
+      {/* Copy Protection Banner for Free Users */}
+      {!isPremium && thesis?.copy_protected && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-amber-50 border border-amber-200 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+            <Shield className="w-4 h-4 text-amber-600" />
+            <span className="text-xs text-amber-700">Copy/paste disabled</span>
+            <Link href="/app/upgrade" className="text-xs font-medium text-amber-800 underline">
+              Upgrade to unlock
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Copy Protection CSS for Free Users */}
+      {!isPremium && thesis?.copy_protected && (
+        <style jsx global>{`
+          .prose {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+          }
+          .prose::selection {
+            background: transparent;
+          }
+        `}</style>
+      )}
     </div>
   );
 }

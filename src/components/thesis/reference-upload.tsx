@@ -213,14 +213,6 @@ export function ReferenceUpload({ thesisId, isPremium, onDocumentsChange }: Refe
         )}
       </div>
 
-      {/* File limit notice for free users */}
-      {!isPremium && (
-        <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
-          <Lock className="w-4 h-4" />
-          <span>Free: 2 files max, 10MB each. <strong>Upgrade to Pro</strong> for up to 10 files and 20MB each.</span>
-        </div>
-      )}
-
       {/* Uploaded files list */}
       {documents.length > 0 && (
         <div className="space-y-2">

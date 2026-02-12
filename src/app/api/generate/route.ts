@@ -17,8 +17,8 @@ import { after } from 'next/server';
 
 export const maxDuration = 300; // 5 minutes for Vercel Pro
 
-// Free users get 3 chapters, premium gets unlimited
-const FREE_USER_CHAPTER_LIMIT = 3;
+// Max chapters for all users (to prevent abuse)
+const MAX_CHAPTERS = 10;
 
 // Interface for outline visual settings
 interface OutlineVisual {
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       message: 'Generation started', 
       thesisId,
       isPremium,
-      chapterLimit: isPremium ? null : FREE_USER_CHAPTER_LIMIT 
+      chapterLimit: MAX_CHAPTERS 
     });
   } catch (error: unknown) {
     console.error('Generate error:', error);
@@ -226,9 +226,9 @@ async function generateThesis(thesis: Thesis, userId: string, supabase: Supabase
         chapterTitles.push('References');
       }
 
-      // For free users, limit to first 3 chapters only
-      const chaptersToGenerate = isPremium ? chapterTitles : chapterTitles.slice(0, FREE_USER_CHAPTER_LIMIT);
-      const lockedChapters = isPremium ? [] : chapterTitles.slice(FREE_USER_CHAPTER_LIMIT);
+      // All users can generate up to MAX_CHAPTERS
+      const chaptersToGenerate = chapterTitles.slice(0, MAX_CHAPTERS);
+      const lockedChapters: string[] = []; // No locked chapters in new model
 
       // Get outlines from metadata - the outlines field contains visual settings (hasTable, hasChart)
       // Note: In new/page.tsx, outlinesWithVisuals is saved under 'outlines' key
