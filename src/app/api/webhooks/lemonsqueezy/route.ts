@@ -41,13 +41,14 @@ export async function POST(request: Request) {
     const data = event.data;
 
     console.log(`Processing webhook: ${eventName}`);
+    console.log('Webhook meta.custom_data:', JSON.stringify(event.meta?.custom_data));
     console.log('Webhook data.attributes:', JSON.stringify(data.attributes, null, 2).substring(0, 1000));
 
     switch (eventName) {
       case 'subscription_created':
       case 'subscription_updated': {
-        // Custom data can come from different places
-        const customData = data.attributes.custom_data || data.meta?.custom_data || {};
+        // LemonSqueezy sends checkout custom data in event.meta.custom_data
+        const customData = event.meta?.custom_data || data.attributes.custom_data || {};
         let userId = customData.user_id;
         const isGuestCheckout = customData.guest_checkout === 'true';
         const customerEmail = data.attributes.user_email || data.attributes.customer_email;
@@ -172,13 +173,21 @@ export async function POST(request: Request) {
               value: priceMap[planType || 'monthly'] || 9.99,
               currency: 'USD',
             });
+
+            // Mark email lead as converted (stop drip sequence)
+            if (customerEmail) {
+              await (supabase as any)
+                .from('email_leads')
+                .update({ converted: true, sequence_active: false })
+                .eq('email', customerEmail.toLowerCase());
+            }
           }
         }
         break;
       }
 
       case 'subscription_cancelled': {
-        const customData = data.attributes.custom_data || data.meta?.custom_data || {};
+        const customData = event.meta?.custom_data || data.attributes.custom_data || {};
         const userId = customData.user_id;
         if (!userId) {
           console.error('No user_id in cancelled subscription custom_data');
@@ -201,8 +210,8 @@ export async function POST(request: Request) {
 
       case 'order_created': {
         // Handle one-time purchases (lifetime or single export)
-        // Custom data can come from different places depending on the event
-        const customData = data.attributes.custom_data || data.meta?.custom_data || {};
+        // LemonSqueezy sends checkout custom data in event.meta.custom_data
+        const customData = event.meta?.custom_data || data.attributes.custom_data || {};
         const userId = customData.user_id;
         if (!userId) {
           console.error('No user_id in order custom_data. Full data:', JSON.stringify(data, null, 2));
@@ -254,6 +263,14 @@ export async function POST(request: Request) {
               value: 199.99,
               currency: 'USD',
             });
+
+            // Mark email lead as converted (stop drip sequence)
+            if (customerEmail) {
+              await (supabase as any)
+                .from('email_leads')
+                .update({ converted: true, sequence_active: false })
+                .eq('email', customerEmail.toLowerCase());
+            }
           }
         } else if (isExport && thesisId) {
           // Single export unlock purchase
@@ -292,7 +309,7 @@ export async function POST(request: Request) {
 
       case 'subscription_payment_success': {
         // Payment was successful - ensure subscription is active
-        const customData = data.attributes.custom_data || data.meta?.custom_data || {};
+        const customData = event.meta?.custom_data || data.attributes.custom_data || {};
         const userId = customData.user_id;
         
         if (!userId) {
