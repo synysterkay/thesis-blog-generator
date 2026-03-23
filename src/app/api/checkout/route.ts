@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     // Validate planId is a valid plan type
-    if (!['monthly', 'yearly', 'lifetime'].includes(planId)) {
+    if (!['monthly', 'unlimited'].includes(planId)) {
       return NextResponse.json({ error: 'Invalid plan ID' }, { status: 400 });
     }
 
@@ -31,9 +31,8 @@ export async function POST(request: Request) {
 
     // Track InitiateCheckout server-side (bypasses ad blockers)
     const priceMap: Record<string, number> = {
-      monthly: 9.99,
-      yearly: 79.99,
-      lifetime: 199.99,
+      monthly: 9,
+      unlimited: 19,
     };
     await trackServerInitiateCheckout({
       email: user.email,

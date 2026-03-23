@@ -5,14 +5,14 @@ import { motion } from 'framer-motion';
 
 export function HowItWorks() {
   const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-100 text-blue-600',
-    cyan: 'bg-cyan-100 text-cyan-600',
-    indigo: 'bg-indigo-100 text-indigo-600',
-    green: 'bg-green-100 text-green-600',
+    blue: 'bg-slate-100 text-slate-900',
+    cyan: 'bg-slate-100 text-slate-900',
+    indigo: 'bg-slate-100 text-slate-900',
+    green: 'bg-slate-100 text-slate-900',
   };
 
   return (
-    <section id="how-it-works" className="py-24 bg-slate-50">
+    <section id="how-it-works" className="py-24 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -21,7 +21,7 @@ export function HowItWorks() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 font-serif">
             From Topic to Thesis in Minutes
           </h2>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">

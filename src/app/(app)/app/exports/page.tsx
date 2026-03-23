@@ -6,18 +6,18 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { 
-  Download,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
-  Trash2,
+  DownloadSimple,
+  SpinnerGap,
+  CheckCircle,
+  WarningCircle,
+  Trash,
   FileText,
   Clock,
-  RefreshCw,
+  ArrowsClockwise,
   XCircle,
-  StopCircle,
-  Edit
-} from 'lucide-react';
+  Stop,
+  PencilSimple
+} from '@phosphor-icons/react';
 import { Export } from '@/types';
 import { toast } from 'sonner';
 
@@ -141,23 +141,11 @@ export default function ExportsPage() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-emerald-100 text-emerald-700';
-      case 'processing': return 'bg-blue-100 text-blue-700';
-      case 'pending': return 'bg-amber-100 text-amber-700';
-      case 'failed': return 'bg-red-100 text-red-700';
-      default: return 'bg-slate-100 text-slate-700';
-    }
+    return 'bg-slate-100 text-slate-900';
   };
 
   const getFormatIcon = (format: string) => {
-    const colors: Record<string, string> = {
-      pdf: 'bg-red-100 text-red-600',
-      docx: 'bg-blue-100 text-blue-600',
-      latex: 'bg-green-100 text-green-600',
-      markdown: 'bg-purple-100 text-purple-600',
-    };
-    return colors[format] || 'bg-slate-100 text-slate-600';
+    return 'bg-slate-100 text-slate-900';
   };
 
   const containerVariants = {
@@ -183,7 +171,7 @@ export default function ExportsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Export History</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-600 mt-1">
             Your recent downloads • Files are downloaded directly to your device
           </p>
         </div>
@@ -193,22 +181,22 @@ export default function ExportsPage() {
           onClick={() => { setLoading(true); fetchExports(); }}
           disabled={loading}
         >
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <ArrowsClockwise size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <SpinnerGap size={32} className="animate-spin text-slate-900" />
         </div>
       ) : exports.length === 0 ? (
-        <div className="text-center py-16 bg-slate-50 rounded-2xl border border-slate-200">
+        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
           <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Download className="w-8 h-8 text-slate-400" />
+            <DownloadSimple size={32} className="text-slate-600" />
           </div>
           <h3 className="text-lg font-medium text-slate-900 mb-2">No exports yet</h3>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto">
+          <p className="text-sm text-slate-600 max-w-sm mx-auto">
             When you export a thesis as PDF, DOCX, or LaTeX, it will appear here for download.
           </p>
         </div>
@@ -222,8 +210,8 @@ export default function ExportsPage() {
           {/* Processing exports */}
           {pendingExports.length > 0 && (
             <div>
-              <h2 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              <h2 className="text-sm font-medium text-slate-600 mb-3 flex items-center gap-2">
+                <SpinnerGap size={16} className="animate-spin text-slate-900" />
                 Processing ({pendingExports.length})
               </h2>
               <div className="space-y-2">
@@ -231,10 +219,10 @@ export default function ExportsPage() {
                   <motion.div
                     key={exp.id}
                     variants={itemVariants}
-                    className="flex items-center gap-4 p-4 bg-blue-50 border border-blue-100 rounded-xl"
+                    className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl"
                   >
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getFormatIcon(exp.format)}`}>
-                      <FileText className="w-5 h-5" />
+                      <FileText size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-medium text-slate-900 truncate">
@@ -244,23 +232,23 @@ export default function ExportsPage() {
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusColor(exp.status)}`}>
                           {exp.status === 'pending' ? 'Queued' : 'Generating...'}
                         </span>
-                        <span className="text-xs text-slate-500">{exp.format.toUpperCase()}</span>
+                        <span className="text-xs text-slate-600">{exp.format.toUpperCase()}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                      <SpinnerGap size={20} className="text-slate-900 animate-spin" />
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDelete(exp.id, true)}
                         disabled={deleting === exp.id}
-                        className="text-slate-400 hover:text-red-500 hover:bg-red-50"
+                        className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                         title="Cancel export"
                       >
                         {deleting === exp.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <SpinnerGap size={16} className="animate-spin" />
                         ) : (
-                          <StopCircle className="w-4 h-4" />
+                          <Stop size={16} weight="fill" />
                         )}
                       </Button>
                     </div>
@@ -273,8 +261,8 @@ export default function ExportsPage() {
           {/* Completed exports */}
           {completedExports.length > 0 && (
             <div>
-              <h2 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <h2 className="text-sm font-medium text-slate-600 mb-3 flex items-center gap-2">
+                <CheckCircle size={16} weight="fill" className="text-slate-900" />
                 Ready to Download ({completedExports.length})
               </h2>
               <div className="space-y-2">
@@ -282,22 +270,22 @@ export default function ExportsPage() {
                   <motion.div
                     key={exp.id}
                     variants={itemVariants}
-                    className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all"
+                    className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all"
                   >
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getFormatIcon(exp.format)}`}>
-                      <FileText className="w-5 h-5" />
+                      <FileText size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-medium text-slate-900 truncate">
                         {exp.thesis_title}
                       </h3>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-                        <span className="font-medium text-slate-700">{exp.format.toUpperCase()}</span>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-slate-600">
+                        <span className="font-medium text-slate-600">{exp.format.toUpperCase()}</span>
                         <span>•</span>
                         <span>{formatFileSize(exp.file_size)}</span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
+                          <Clock size={12} />
                           {getTimeAgo(exp.created_at)}
                         </span>
                       </div>
@@ -307,17 +295,17 @@ export default function ExportsPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => window.open(`/app/thesis/${exp.thesis_id}?edit=pdf`, '_blank')}
-                        className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 border-purple-200"
+                        className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 border-slate-200"
                       >
-                        <Edit className="w-4 h-4 mr-1.5" />
+                        <PencilSimple size={16} className="mr-1.5" />
                         Edit
                       </Button>
                       <Button
                         size="sm"
                         onClick={() => handleDownload(exp.id)}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-slate-900 hover:bg-slate-800 text-white"
                       >
-                        <Download className="w-4 h-4 mr-1.5" />
+                        <DownloadSimple size={16} className="mr-1.5" />
                         Download
                       </Button>
                       <Button
@@ -325,12 +313,12 @@ export default function ExportsPage() {
                         variant="ghost"
                         onClick={() => handleDelete(exp.id)}
                         disabled={deleting === exp.id}
-                        className="text-slate-400 hover:text-red-500 hover:bg-red-50"
+                        className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                       >
                         {deleting === exp.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <SpinnerGap size={16} className="animate-spin" />
                         ) : (
-                          <Trash2 className="w-4 h-4" />
+                          <Trash size={16} />
                         )}
                       </Button>
                     </div>
@@ -343,8 +331,8 @@ export default function ExportsPage() {
           {/* Failed exports */}
           {failedExports.length > 0 && (
             <div>
-              <h2 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-500" />
+              <h2 className="text-sm font-medium text-slate-600 mb-3 flex items-center gap-2">
+                <WarningCircle size={16} className="text-slate-900" />
                 Failed ({failedExports.length})
               </h2>
               <div className="space-y-2">
@@ -352,17 +340,17 @@ export default function ExportsPage() {
                   <motion.div
                     key={exp.id}
                     variants={itemVariants}
-                    className="flex items-center gap-4 p-4 bg-red-50 border border-red-100 rounded-xl"
+                    className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl"
                   >
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-red-100 text-red-600">
-                      <AlertCircle className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 text-slate-900">
+                      <WarningCircle size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-medium text-slate-900 truncate">
                         {exp.thesis_title}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-red-600">
+                        <span className="text-xs text-slate-600">
                           {exp.error_message || 'Export failed'}
                         </span>
                       </div>
@@ -372,12 +360,12 @@ export default function ExportsPage() {
                       variant="ghost"
                       onClick={() => handleDelete(exp.id)}
                       disabled={deleting === exp.id}
-                      className="text-slate-400 hover:text-red-500 hover:bg-red-100"
+                      className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                     >
                       {deleting === exp.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <SpinnerGap size={16} className="animate-spin" />
                       ) : (
-                        <Trash2 className="w-4 h-4" />
+                        <Trash size={16} />
                       )}
                     </Button>
                   </motion.div>

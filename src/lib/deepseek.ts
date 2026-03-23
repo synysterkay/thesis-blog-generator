@@ -71,6 +71,12 @@ Before finishing, ensure the writing:
 - Shows natural variation in complexity and development.
 `;
 
+// Build a language-aware system prompt
+export function getSystemPrompt(language: string = 'English'): string {
+  if (language === 'English') return THESIS_SYSTEM_PROMPT;
+  return `${THESIS_SYSTEM_PROMPT}\n\n## CRITICAL LANGUAGE REQUIREMENT\nYou MUST write ALL content entirely in ${language}. Every sentence, heading, paragraph, and piece of text you produce must be in ${language}. Do NOT write in English. The ONLY language you should output is ${language}.`;
+}
+
 export async function callDeepSeek(
   messages: DeepSeekMessage[],
   config: DeepSeekConfig = {}
@@ -200,7 +206,7 @@ export async function suggestChapters(
   language: string = 'English'
 ): Promise<string[]> {
   const messages: DeepSeekMessage[] = [
-    { role: 'system', content: THESIS_SYSTEM_PROMPT },
+    { role: 'system', content: getSystemPrompt(language) },
     {
       role: 'user',
       content: `
@@ -239,7 +245,7 @@ export async function generateChapterOutline(
   language: string = 'English'
 ): Promise<string[]> {
   const messages: DeepSeekMessage[] = [
-    { role: 'system', content: THESIS_SYSTEM_PROMPT },
+    { role: 'system', content: getSystemPrompt(language) },
     {
       role: 'user',
       content: `
@@ -321,7 +327,7 @@ IMPORTANT:
   const styleInstructions = getWritingStyleInstructions(writingStyle);
 
   const messages: DeepSeekMessage[] = [
-    { role: 'system', content: THESIS_SYSTEM_PROMPT },
+    { role: 'system', content: getSystemPrompt(language) },
     {
       role: 'user',
       content: `
@@ -400,7 +406,7 @@ Incorporate relevant background information and context from these sources.
     : '';
   
   const messages: DeepSeekMessage[] = [
-    { role: 'system', content: THESIS_SYSTEM_PROMPT },
+    { role: 'system', content: getSystemPrompt(language) },
     {
       role: 'user',
       content: `
@@ -439,7 +445,7 @@ export async function generateConclusion(
   const styleInstructions = getWritingStyleInstructions(writingStyle);
   
   const messages: DeepSeekMessage[] = [
-    { role: 'system', content: THESIS_SYSTEM_PROMPT },
+    { role: 'system', content: getSystemPrompt(language) },
     {
       role: 'user',
       content: `

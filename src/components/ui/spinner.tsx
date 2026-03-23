@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { SpinnerGap } from "@phosphor-icons/react";
 
 interface SpinnerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -9,14 +9,14 @@ interface SpinnerProps {
 }
 
 export function Spinner({ size = 'md', className }: SpinnerProps) {
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-6 h-6',
-    lg: 'w-8 h-8',
+  const sizeMap = {
+    sm: 16,
+    md: 24,
+    lg: 32,
   };
 
   return (
-    <Loader2 className={cn("animate-spin text-blue-600", sizeClasses[size], className)} />
+    <SpinnerGap size={sizeMap[size]} className={cn("animate-spin text-slate-600", className)} />
   );
 }
 

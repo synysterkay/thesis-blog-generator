@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
+import { X } from "@phosphor-icons/react";
 import { Button } from "./button";
 
 interface ModalProps {
@@ -31,14 +31,14 @@ export function Modal({ isOpen, onClose, children, className, showCloseButton = 
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in"
         onClick={onClose}
       />
       
       {/* Modal content */}
       <div
         className={cn(
-          "relative w-full max-w-lg mx-4 p-8 rounded-3xl bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl animate-in",
+          "relative w-full max-w-lg mx-4 p-8 rounded-3xl bg-white border border-slate-200 shadow-2xl animate-in",
           className
         )}
         style={{
@@ -48,9 +48,9 @@ export function Modal({ isOpen, onClose, children, className, showCloseButton = 
         {showCloseButton && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X size={20} />
           </button>
         )}
         {children}

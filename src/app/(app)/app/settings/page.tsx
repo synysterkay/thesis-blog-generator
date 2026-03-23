@@ -8,27 +8,32 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { 
   User, 
-  Mail, 
+  Envelope, 
   CreditCard, 
   Bell, 
-  Shield,
-  Save,
-  Loader2,
-  ExternalLink,
+  ShieldCheck,
+  FloppyDisk,
+  SpinnerGap,
+  ArrowSquareOut,
   Calendar,
   CheckCircle,
   XCircle,
-  AlertTriangle,
+  Warning,
   Crown,
-  Zap,
-  RefreshCw,
+  Lightning,
+  ArrowsClockwise,
   Receipt,
-  Settings2,
+  GearSix,
   Clock,
   Infinity,
   Wallet,
-  PenLine
-} from 'lucide-react';
+  PencilSimple,
+  ShareNetwork,
+  Copy,
+  Gift,
+  Users,
+  Check as CheckIcon
+} from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
 interface PaymentMethod {
@@ -43,7 +48,7 @@ interface PaymentMethod {
 interface SubscriptionDetails {
   id: string;
   status: 'active' | 'cancelled' | 'expired' | 'past_due' | 'paused' | 'on_trial';
-  planType: 'free' | 'monthly' | 'yearly' | 'lifetime';
+  planType: 'free' | 'monthly' | 'unlimited';
   planName: string;
   price: number;
   currency: string;
@@ -61,6 +66,22 @@ interface SubscriptionDetails {
   updatePaymentMethodUrl: string | null;
 }
 
+interface ReferralData {
+  code: string;
+  creditsEarned: number;
+  creditsUsed: number;
+  creditsAvailable: number;
+  referrals: Array<{
+    id: string;
+    status: string;
+    email: string;
+    qualifiedAt: string | null;
+    createdAt: string;
+  }>;
+  maxCredits: number;
+  creditsPerExport: number;
+}
+
 export default function SettingsPage() {
   const { user, refreshSubscription } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -68,10 +89,14 @@ export default function SettingsPage() {
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [referralData, setReferralData] = useState<ReferralData | null>(null);
+  const [referralLoading, setReferralLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
     fetchSubscriptionDetails();
+    fetchReferralData();
   }, []);
 
   const fetchSubscriptionDetails = async () => {
@@ -86,6 +111,33 @@ export default function SettingsPage() {
       console.error('Error fetching subscription details:', error);
     } finally {
       setLoadingSubscription(false);
+    }
+  };
+
+  const fetchReferralData = async () => {
+    setReferralLoading(true);
+    try {
+      const response = await fetch('/api/referral');
+      if (response.ok) {
+        const data = await response.json();
+        setReferralData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching referral data:', error);
+    } finally {
+      setReferralLoading(false);
+    }
+  };
+
+  const handleCopyReferralLink = async () => {
+    if (!referralData?.code) return;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/?ref=${referralData.code}`);
+      setCopied(true);
+      toast.success('Referral link copied!');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Failed to copy');
     }
   };
 
@@ -184,8 +236,8 @@ export default function SettingsPage() {
   const getStatusBadge = (status: string, cancelAtPeriodEnd: boolean) => {
     if (cancelAtPeriodEnd) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-          <AlertTriangle className="w-3 h-3" />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-900">
+          <Warning size={12} />
           Cancelling
         </span>
       );
@@ -194,35 +246,35 @@ export default function SettingsPage() {
     switch (status) {
       case 'active':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-            <CheckCircle className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-900">
+            <CheckCircle size={12} weight="fill" />
             Active
           </span>
         );
       case 'cancelled':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-            <XCircle className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-900">
+            <XCircle size={12} weight="fill" />
             Cancelled
           </span>
         );
       case 'past_due':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-            <AlertTriangle className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-900">
+            <Warning size={12} />
             Past Due
           </span>
         );
       case 'on_trial':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-            <Clock className="w-3 h-3" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-900">
+            <Clock size={12} />
             Trial
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
             {status}
           </span>
         );
@@ -231,14 +283,12 @@ export default function SettingsPage() {
 
   const getPlanIcon = (planType: string) => {
     switch (planType) {
-      case 'lifetime':
-        return <Infinity className="w-5 h-5 text-purple-600" />;
-      case 'yearly':
-        return <Crown className="w-5 h-5 text-amber-600" />;
+      case 'unlimited':
+        return <Crown size={20} className="text-slate-900" />;
       case 'monthly':
-        return <Zap className="w-5 h-5 text-blue-600" />;
+        return <Lightning size={20} className="text-slate-900" />;
       default:
-        return <CreditCard className="w-5 h-5 text-slate-400" />;
+        return <CreditCard size={20} className="text-slate-600" />;
     }
   };
 
@@ -252,8 +302,8 @@ export default function SettingsPage() {
       {/* Profile Section */}
       <Card className="p-6 mb-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-            <User className="w-5 h-5 text-blue-600" />
+          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+            <User size={20} className="text-slate-900" />
           </div>
           <div>
             <h2 className="font-semibold text-slate-900">Profile</h2>
@@ -263,7 +313,7 @@ export default function SettingsPage() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Full Name</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -272,24 +322,24 @@ export default function SettingsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Email</label>
             <Input
               value={user?.email || ''}
               disabled
-              className="bg-slate-50"
+              className="bg-slate-100"
             />
-            <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
+            <p className="text-xs text-slate-600 mt-1">Email cannot be changed</p>
           </div>
 
           <Button onClick={handleUpdateProfile} disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                <SpinnerGap size={16} className="mr-2 animate-spin" />
                 Saving...
               </>
             ) : (
               <>
-                <Save className="mr-2 w-4 h-4" />
+                <FloppyDisk size={16} className="mr-2" />
                 Save Changes
               </>
             )}
@@ -301,8 +351,8 @@ export default function SettingsPage() {
       <Card className="p-6 mb-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <CreditCard className="w-5 h-5 text-green-600" />
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+              <CreditCard size={20} className="text-slate-900" />
             </div>
             <div>
               <h2 className="font-semibold text-slate-900">Subscription</h2>
@@ -315,26 +365,21 @@ export default function SettingsPage() {
             onClick={fetchSubscriptionDetails}
             disabled={loadingSubscription}
           >
-            <RefreshCw className={`w-4 h-4 ${loadingSubscription ? 'animate-spin' : ''}`} />
+            <ArrowsClockwise size={16} className={loadingSubscription ? 'animate-spin' : ''} />
           </Button>
         </div>
 
         {loadingSubscription ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+            <SpinnerGap size={24} className="animate-spin text-slate-600" />
           </div>
         ) : subscriptionDetails ? (
           <div className="space-y-6">
             {/* Plan Overview */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
+            <div className="p-4 rounded-xl bg-white border border-slate-200">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    subscriptionDetails.planType === 'lifetime' ? 'bg-purple-100' :
-                    subscriptionDetails.planType === 'yearly' ? 'bg-amber-100' :
-                    subscriptionDetails.planType === 'monthly' ? 'bg-blue-100' :
-                    'bg-slate-100'
-                  }`}>
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-slate-100`}>
                     {getPlanIcon(subscriptionDetails.planType)}
                   </div>
                   <div>
@@ -355,11 +400,11 @@ export default function SettingsPage() {
               {/* Subscription Details Grid */}
               {subscriptionDetails.planType !== 'free' && (
                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200">
-                  {subscriptionDetails.planType !== 'lifetime' && subscriptionDetails.renewsAt && !subscriptionDetails.cancelAtPeriodEnd && (
+                  {subscriptionDetails.renewsAt && !subscriptionDetails.cancelAtPeriodEnd && (
                     <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Next Billing Date</p>
+                      <p className="text-xs text-slate-600 uppercase tracking-wide mb-1">Next Billing Date</p>
                       <p className="font-medium text-slate-900 flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-slate-400" />
+                        <Calendar size={16} className="text-slate-600" />
                         {formatDate(subscriptionDetails.renewsAt)}
                       </p>
                     </div>
@@ -367,9 +412,9 @@ export default function SettingsPage() {
                   
                   {subscriptionDetails.cancelAtPeriodEnd && subscriptionDetails.endsAt && (
                     <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Access Until</p>
-                      <p className="font-medium text-amber-600 flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4" />
+                      <p className="text-xs text-slate-600 uppercase tracking-wide mb-1">Access Until</p>
+                      <p className="font-medium text-slate-900 flex items-center gap-2">
+                        <Warning size={16} />
                         {formatDate(subscriptionDetails.endsAt)}
                       </p>
                     </div>
@@ -377,43 +422,33 @@ export default function SettingsPage() {
 
                   {subscriptionDetails.currentPeriodStart && (
                     <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-                        {subscriptionDetails.planType === 'lifetime' ? 'Member Since' : 'Current Period Started'}
+                      <p className="text-xs text-slate-600 uppercase tracking-wide mb-1">
+                        Current Period Started
                       </p>
                       <p className="font-medium text-slate-900 flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-slate-400" />
+                        <Clock size={16} className="text-slate-600" />
                         {formatDate(subscriptionDetails.currentPeriodStart)}
-                      </p>
-                    </div>
-                  )}
-
-                  {subscriptionDetails.planType === 'lifetime' && (
-                    <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Access Duration</p>
-                      <p className="font-medium text-purple-600 flex items-center gap-2">
-                        <Infinity className="w-4 h-4" />
-                        Forever
                       </p>
                     </div>
                   )}
 
                   {subscriptionDetails.paymentMethod && (
                     <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Payment Method</p>
+                      <p className="text-xs text-slate-600 uppercase tracking-wide mb-1">Payment Method</p>
                       {subscriptionDetails.paymentMethod.type === 'paypal' ? (
                         <div className="flex items-center justify-between">
                           <p className="font-medium text-slate-900 flex items-center gap-2">
-                            <Wallet className="w-4 h-4 text-blue-500" />
+                            <Wallet size={16} className="text-slate-600" />
                             PayPal {subscriptionDetails.paymentMethod.paypalEmail && (
-                              <span className="text-slate-500 text-sm">({subscriptionDetails.paymentMethod.paypalEmail})</span>
+                              <span className="text-slate-600 text-sm">({subscriptionDetails.paymentMethod.paypalEmail})</span>
                             )}
                           </p>
                           {subscriptionDetails.updatePaymentMethodUrl && (
                             <button
                               onClick={() => window.open(subscriptionDetails.updatePaymentMethodUrl!, '_blank')}
-                              className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                              className="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1"
                             >
-                              <PenLine className="w-3 h-3" />
+                              <PencilSimple size={12} />
                               Update
                             </button>
                           )}
@@ -422,11 +457,11 @@ export default function SettingsPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium text-slate-900 flex items-center gap-2">
-                              <CreditCard className="w-4 h-4 text-slate-400" />
+                              <CreditCard size={16} className="text-slate-600" />
                               {subscriptionDetails.paymentMethod.brand} •••• {subscriptionDetails.paymentMethod.lastFour}
                             </p>
                             {subscriptionDetails.paymentMethod.expiryMonth && subscriptionDetails.paymentMethod.expiryYear && (
-                              <p className="text-xs text-slate-500 mt-0.5 ml-6">
+                              <p className="text-xs text-slate-600 mt-0.5 ml-6">
                                 Expires {subscriptionDetails.paymentMethod.expiryMonth}/{subscriptionDetails.paymentMethod.expiryYear}
                               </p>
                             )}
@@ -434,9 +469,9 @@ export default function SettingsPage() {
                           {subscriptionDetails.updatePaymentMethodUrl && (
                             <button
                               onClick={() => window.open(subscriptionDetails.updatePaymentMethodUrl!, '_blank')}
-                              className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                              className="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1"
                             >
-                              <PenLine className="w-3 h-3" />
+                              <PencilSimple size={12} />
                               Update
                             </button>
                           )}
@@ -452,7 +487,7 @@ export default function SettingsPage() {
             <div className="flex flex-wrap gap-3">
               {subscriptionDetails.planType === 'free' ? (
                 <Button onClick={() => window.location.href = '/app/upgrade'}>
-                  <Crown className="mr-2 w-4 h-4" />
+                  <Crown size={16} className="mr-2" />
                   Upgrade to Pro
                 </Button>
               ) : (
@@ -461,12 +496,12 @@ export default function SettingsPage() {
                   {subscriptionDetails.customerPortalUrl && (
                     <Button variant="secondary" onClick={handleOpenPortal} disabled={actionLoading === 'portal'}>
                       {actionLoading === 'portal' ? (
-                        <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                        <SpinnerGap size={16} className="mr-2 animate-spin" />
                       ) : (
-                        <Settings2 className="mr-2 w-4 h-4" />
+                        <GearSix size={16} className="mr-2" />
                       )}
                       Manage Billing
-                      <ExternalLink className="ml-2 w-4 h-4" />
+                      <ArrowSquareOut size={16} className="ml-2" />
                     </Button>
                   )}
 
@@ -476,24 +511,24 @@ export default function SettingsPage() {
                       variant="outline" 
                       onClick={() => window.open(subscriptionDetails.customerPortalUrl + '?tab=invoices', '_blank')}
                     >
-                      <Receipt className="mr-2 w-4 h-4" />
+                      <Receipt size={16} className="mr-2" />
                       View Invoices
                     </Button>
                   )}
 
                   {/* Cancel / Resume */}
-                  {subscriptionDetails.planType !== 'lifetime' && (
+                  {
                     subscriptionDetails.cancelAtPeriodEnd ? (
                       <Button 
                         variant="outline" 
                         onClick={handleResumeSubscription}
                         disabled={actionLoading === 'resume'}
-                        className="border-green-200 text-green-700 hover:bg-green-50"
+                        className="border-slate-300 text-slate-900 hover:bg-slate-100"
                       >
                         {actionLoading === 'resume' ? (
-                          <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                          <SpinnerGap size={16} className="mr-2 animate-spin" />
                         ) : (
-                          <RefreshCw className="mr-2 w-4 h-4" />
+                          <ArrowsClockwise size={16} className="mr-2" />
                         )}
                         Resume Subscription
                       </Button>
@@ -502,26 +537,26 @@ export default function SettingsPage() {
                         variant="ghost" 
                         onClick={handleCancelSubscription}
                         disabled={actionLoading === 'cancel'}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                       >
                         {actionLoading === 'cancel' ? (
-                          <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                          <SpinnerGap size={16} className="mr-2 animate-spin" />
                         ) : (
-                          <XCircle className="mr-2 w-4 h-4" />
+                          <XCircle size={16} className="mr-2" />
                         )}
                         Cancel Subscription
                       </Button>
                     )
-                  )}
+                  }
                 </>
               )}
             </div>
 
             {/* Upgrade/Change Plan Notice */}
             {subscriptionDetails.planType === 'monthly' && (
-              <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
-                <p className="text-sm text-amber-800">
-                  <strong>Save 33%</strong> by switching to yearly billing! 
+              <div className="p-4 rounded-lg bg-white border border-slate-200">
+                <p className="text-sm text-slate-900">
+                  <strong>Want unlimited downloads?</strong> Upgrade to Pro Unlimited for $19/mo.
                   <button 
                     onClick={() => window.location.href = '/app/upgrade'} 
                     className="ml-2 underline hover:no-underline"
@@ -533,17 +568,106 @@ export default function SettingsPage() {
             )}
           </div>
         ) : (
-          <div className="text-center py-8 text-slate-500">
+          <div className="text-center py-8 text-slate-600">
             Unable to load subscription details
           </div>
+        )}
+      </Card>
+
+      {/* Referral Credits Section */}
+      <Card className="p-6 mb-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+            <Gift size={20} className="text-emerald-600" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-slate-900">Refer & Earn</h2>
+            <p className="text-sm text-slate-600">Invite friends, earn free exports</p>
+          </div>
+        </div>
+
+        {referralLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <SpinnerGap size={24} className="animate-spin text-slate-600" />
+          </div>
+        ) : referralData ? (
+          <div className="space-y-5">
+            {/* Credits Overview */}
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-emerald-900">Your Credits</span>
+                <span className="text-2xl font-bold text-emerald-700">
+                  {referralData.creditsAvailable}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-emerald-200 rounded-full overflow-hidden mb-2">
+                <div 
+                  className="h-full bg-emerald-500 rounded-full transition-all"
+                  style={{ width: `${Math.min((referralData.creditsAvailable / referralData.creditsPerExport) * 100, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs text-emerald-700">
+                {referralData.creditsAvailable >= referralData.creditsPerExport
+                  ? `You can redeem ${Math.floor(referralData.creditsAvailable / referralData.creditsPerExport)} free export${Math.floor(referralData.creditsAvailable / referralData.creditsPerExport) > 1 ? 's' : ''}!`
+                  : `${referralData.creditsPerExport - referralData.creditsAvailable} more referral${referralData.creditsPerExport - referralData.creditsAvailable === 1 ? '' : 's'} until your next free export`
+                }
+              </p>
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-emerald-200 text-xs text-emerald-700">
+                <span>Earned: {referralData.creditsEarned}</span>
+                <span>Used: {referralData.creditsUsed}</span>
+                <span>{referralData.creditsPerExport} credits = 1 export</span>
+              </div>
+            </div>
+
+            {/* Referral Link */}
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-2">Your referral link</label>
+              <div className="flex gap-2">
+                <div className="flex-1 flex items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5">
+                  <span className="text-sm text-slate-600 truncate">
+                    {typeof window !== 'undefined' ? window.location.origin : ''}/?ref={referralData.code}
+                  </span>
+                </div>
+                <Button variant="secondary" onClick={handleCopyReferralLink}>
+                  {copied ? <CheckIcon size={16} /> : <Copy size={16} />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Referral History */}
+            {referralData.referrals.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">Referral history</label>
+                <div className="space-y-2">
+                  {referralData.referrals.map((ref) => (
+                    <div key={ref.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <Users size={16} className="text-slate-600" />
+                        <span className="text-sm text-slate-700">{ref.email}</span>
+                      </div>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        ref.status === 'qualified'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {ref.status === 'qualified' ? '+1 credit' : 'Pending'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-600">Unable to load referral data</p>
         )}
       </Card>
 
       {/* Notifications Section */}
       <Card className="p-6 mb-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-            <Bell className="w-5 h-5 text-purple-600" />
+          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+            <Bell size={20} className="text-slate-900" />
           </div>
           <div>
             <h2 className="font-semibold text-slate-900">Notifications</h2>
@@ -553,16 +677,16 @@ export default function SettingsPage() {
 
         <div className="space-y-4">
           <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-slate-700">Thesis generation complete</span>
-            <input type="checkbox" defaultChecked className="w-5 h-5 rounded text-blue-600" />
+            <span className="text-slate-600">Thesis generation complete</span>
+            <input type="checkbox" defaultChecked className="w-5 h-5 rounded text-slate-900 accent-white" />
           </label>
           <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-slate-700">Weekly usage summary</span>
-            <input type="checkbox" className="w-5 h-5 rounded text-blue-600" />
+            <span className="text-slate-600">Weekly usage summary</span>
+            <input type="checkbox" className="w-5 h-5 rounded text-slate-900 accent-white" />
           </label>
           <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-slate-700">Product updates & features</span>
-            <input type="checkbox" defaultChecked className="w-5 h-5 rounded text-blue-600" />
+            <span className="text-slate-600">Product updates & features</span>
+            <input type="checkbox" defaultChecked className="w-5 h-5 rounded text-slate-900 accent-white" />
           </label>
         </div>
       </Card>
@@ -570,8 +694,8 @@ export default function SettingsPage() {
       {/* Security Section */}
       <Card className="p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-red-600" />
+          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+            <ShieldCheck size={20} className="text-slate-900" />
           </div>
           <div>
             <h2 className="font-semibold text-slate-900">Security</h2>
@@ -591,7 +715,7 @@ export default function SettingsPage() {
 
           <div className="pt-4 border-t border-slate-200">
             <p className="text-sm text-slate-600 mb-2">Danger Zone</p>
-            <Button variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+            <Button variant="ghost" className="text-slate-600 hover:text-slate-900 hover:bg-slate-100">
               Delete Account
             </Button>
           </div>

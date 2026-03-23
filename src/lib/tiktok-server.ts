@@ -117,7 +117,7 @@ export async function trackTikTokEvent(params: {
   }
 }
 
-// Track CompletePayment event (server-side)
+// Track Purchase event (server-side)
 export async function trackServerCompletePayment(params: {
   email?: string;
   userId?: string;
@@ -127,7 +127,7 @@ export async function trackServerCompletePayment(params: {
   currency?: string;
 }): Promise<boolean> {
   return trackTikTokEvent({
-    event: 'CompletePayment',
+    event: 'Purchase', // Use 'Purchase' instead of 'CompletePayment'
     ...params,
   });
 }

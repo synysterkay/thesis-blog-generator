@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Script to grant lifetime access to a user
+ * Script to grant unlimited access to a user
  * Usage: npx ts-node grant-access.ts email@example.com
  */
 
@@ -25,7 +25,7 @@ if (!email) {
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 async function grantAccess() {
-  console.log(`Granting lifetime access to: ${email}`);
+  console.log(`Granting unlimited access to: ${email}`);
 
   // Find user by email
   const { data: users, error: userError } = await supabase.auth.admin.listUsers();
@@ -74,7 +74,7 @@ async function grantAccess() {
       .from('subscriptions')
       .update({
         lemonsqueezy_subscription_id: `admin-grant-${Date.now()}`,
-        plan_type: 'lifetime',
+        plan_type: 'unlimited',
         status: 'active',
         current_period_start: new Date().toISOString(),
         current_period_end: null,
@@ -95,7 +95,7 @@ async function grantAccess() {
         user_id: user.id,
         lemonsqueezy_subscription_id: `admin-grant-${Date.now()}`,
         lemonsqueezy_customer_id: null,
-        plan_type: 'lifetime',
+        plan_type: 'unlimited',
         status: 'active',
         current_period_start: new Date().toISOString(),
         current_period_end: null,
@@ -108,7 +108,7 @@ async function grantAccess() {
     }
   }
 
-  console.log(`✅ Lifetime access granted to ${email}`);
+  console.log(`✅ Unlimited access granted to ${email}`);
 }
 
 grantAccess();

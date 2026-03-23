@@ -5,7 +5,7 @@ export interface User {
   full_name: string | null;
   avatar_url: string | null;
   is_premium: boolean;
-  subscription_status: 'active' | 'inactive' | 'cancelled' | 'lifetime' | 'refunded';
+  subscription_status: 'active' | 'inactive' | 'cancelled' | 'refunded';
   created_at: string;
   updated_at: string;
 }
@@ -32,7 +32,7 @@ export interface Subscription {
 export interface SubscriptionStatus {
   isActive: boolean;
   isPremium: boolean;
-  planType: 'free' | 'monthly' | 'yearly' | 'lifetime' | null;
+  planType: 'free' | 'monthly' | 'unlimited' | null;
   status: 'active' | 'cancelled' | 'expired' | 'past_due' | 'refunded' | null;
   renewsAt: Date | null;
   endsAt: Date | null;
@@ -199,7 +199,7 @@ export interface ApiResponse<T> {
 
 // Checkout types
 export interface CheckoutRequest {
-  plan: 'monthly' | 'yearly' | 'lifetime';
+  plan: 'monthly' | 'unlimited';
 }
 
 export interface CheckoutResponse {
@@ -233,10 +233,10 @@ export interface Export {
 
 // Pricing plans
 export interface PricingPlan {
-  id: 'monthly' | 'yearly' | 'lifetime';
+  id: 'monthly' | 'unlimited';
   name: string;
   price: number;
-  interval: 'month' | 'year' | 'lifetime';
+  interval: 'month';
   features: string[];
   popular?: boolean;
   savings?: string;
@@ -284,12 +284,12 @@ export type TargetLength = 'short' | 'medium' | 'long';
 
 // Languages
 export const SUPPORTED_LANGUAGES = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'de', label: 'German' },
-  { value: 'it', label: 'Italian' },
-  { value: 'pt', label: 'Portuguese' },
-  { value: 'pl', label: 'Polish' },
-  { value: 'nl', label: 'Dutch' },
+  { value: 'English', label: 'English' },
+  { value: 'French', label: 'French' },
+  { value: 'Spanish', label: 'Spanish' },
+  { value: 'Arabic', label: 'Arabic' },
+  { value: 'German', label: 'German' },
+  { value: 'Portuguese', label: 'Portuguese' },
+  { value: 'Chinese', label: 'Chinese' },
+  { value: 'Hindi', label: 'Hindi' },
 ] as const;

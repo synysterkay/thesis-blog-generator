@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
 import { Card } from '@/components/ui/card';
-import { ArrowRight, Calendar, Clock, User, Search, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { ArrowRight, Calendar, Clock, User, MagnifyingGlass, CaretLeft, CaretRight } from '@phosphor-icons/react';
 
 interface BlogPost {
   slug: string;
@@ -73,7 +73,7 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-32 pb-16 bg-gradient-to-b from-blue-50 to-white">
+      <section className="pt-32 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -89,13 +89,13 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
             
             {/* Search */}
             <div className="relative max-w-md mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <MagnifyingGlass size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search articles..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-200 outline-none transition-all"
               />
             </div>
             
@@ -117,7 +117,7 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
                 onClick={() => handleCategoryChange(category)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   category === selectedCategory
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-slate-900 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -142,8 +142,8 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
                   transition={{ delay: index * 0.1 }}
                 >
                   <Link href={`/blog/${post.slug}`}>
-                    <Card hover className="overflow-hidden h-full">
-                      <div className="aspect-[16/9] relative bg-gradient-to-br from-blue-100 to-cyan-100">
+                    <Card hover className="overflow-hidden h-full bg-white border border-slate-200 shadow-sm">
+                      <div className="aspect-[16/9] relative bg-slate-50">
                         {post.image ? (
                           <Image
                             src={post.image}
@@ -153,17 +153,17 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <div className="text-6xl opacity-50">📚</div>
+                            <div className="text-6xl opacity-30">📚</div>
                           </div>
                         )}
                       </div>
                       <div className="p-6">
                         <div className="flex items-center gap-3 mb-3">
-                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                          <span className="px-3 py-1 bg-slate-100 text-slate-900 text-xs font-medium rounded-full">
                             {post.category}
                           </span>
                           <span className="text-xs text-slate-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
+                            <Clock size={12} />
                             {post.readTime || '5 min read'}
                           </span>
                         </div>
@@ -175,12 +175,12 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
                         </p>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 text-sm text-slate-500">
-                            <User className="w-4 h-4" />
+                            <User size={16} />
                             {post.author || 'Thesis Generator Team'}
                           </div>
-                          <div className="flex items-center gap-1 text-blue-600 text-sm font-medium">
+                          <div className="flex items-center gap-1 text-slate-900 text-sm font-medium">
                             Read more
-                            <ArrowRight className="w-4 h-4" />
+                            <ArrowRight size={16} />
                           </div>
                         </div>
                       </div>
@@ -194,7 +194,7 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
       )}
 
       {/* All Posts */}
-      <section className="py-16 bg-slate-50">
+      <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold text-slate-900 mb-8">
             {selectedCategory === 'All' ? 'Latest Articles' : selectedCategory}
@@ -215,8 +215,8 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
                     transition={{ delay: Math.min(index * 0.05, 0.3) }}
                   >
                     <Link href={`/blog/${post.slug}`}>
-                      <Card hover className="overflow-hidden h-full bg-white">
-                        <div className="aspect-[16/10] relative bg-gradient-to-br from-slate-100 to-slate-50">
+                      <Card hover className="overflow-hidden h-full bg-white border border-slate-200 shadow-sm">
+                        <div className="aspect-[16/10] relative bg-slate-50">
                           {post.image ? (
                             <Image
                               src={post.image}
@@ -226,13 +226,13 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <div className="text-4xl opacity-40">📝</div>
+                              <div className="text-4xl opacity-20">📝</div>
                             </div>
                           )}
                         </div>
                         <div className="p-5">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-medium rounded">
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-xs font-medium rounded">
                               {post.category}
                             </span>
                           </div>
@@ -244,11 +244,11 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
                           </p>
                           <div className="flex items-center gap-3 text-xs text-slate-500">
                             <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
+                              <Calendar size={12} />
                               {post.date}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                              <Clock size={12} />
                               {post.readTime || '5 min read'}
                             </span>
                           </div>
@@ -267,7 +267,7 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
                     disabled={currentPage === 1}
                     className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <CaretLeft size={20} />
                   </button>
                   
                   {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -289,7 +289,7 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
                             onClick={() => setCurrentPage(page)}
                             className={`w-10 h-10 rounded-lg font-medium transition-colors ${
                               currentPage === page
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-slate-900 text-white'
                                 : 'border border-slate-200 text-slate-600 hover:bg-slate-100'
                             }`}
                           >
@@ -304,7 +304,7 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
                     disabled={currentPage === totalPages}
                     className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    <ChevronRightIcon className="w-5 h-5" />
+                    <CaretRight size={20} />
                   </button>
                 </div>
               )}
@@ -316,24 +316,24 @@ export default function BlogPageClient({ posts }: BlogPageClientProps) {
       {/* Newsletter CTA */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="p-8 md:p-12 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-center">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">
+          <Card className="p-8 md:p-12 bg-slate-50 border border-slate-200 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">
               Stay Updated with Thesis Writing Tips
             </h2>
-            <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+            <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
               Get weekly insights, research strategies, and productivity tips delivered to your inbox.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="flex-1 px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
               />
-              <button className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-colors">
+              <button className="px-6 py-3 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors">
                 Subscribe
               </button>
             </div>
-            <p className="text-xs text-blue-200 mt-4">
+            <p className="text-xs text-slate-500 mt-4">
               No spam. Unsubscribe anytime.
             </p>
           </Card>

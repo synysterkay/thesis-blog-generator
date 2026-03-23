@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   try {
     // This should be protected in production (admin only)
     const body = await request.json();
-    const { email, plan = 'lifetime' } = body;
+    const { email, plan = 'unlimited' } = body;
 
     if (!email) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });

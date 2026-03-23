@@ -5,12 +5,32 @@
   "regions": ["iad1"],
   "functions": {
     "app/api/export/**/*.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "app/api/generate/**/*.ts": {
-      "maxDuration": 60
+      "maxDuration": 300
+    },
+    "app/api/email/drip/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/email/lifecycle/route.ts": {
+      "maxDuration": 300
     }
   },
+  "crons": [
+    {
+      "path": "/api/email/drip",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/generate/resume",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/email/lifecycle",
+      "schedule": "0 10 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",

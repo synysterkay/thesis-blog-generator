@@ -3,36 +3,35 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X } from 'lucide-react';
+import { List, X } from '@phosphor-icons/react';
 import { useAuth } from '@/providers/auth-provider';
-import { LogoIcon } from '@/components/ui/logo';
+import { LogoWithText } from '@/components/ui/logo';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, loading } = useAuth();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200/60">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo - reduced size, more spacing */}
-          <Link href="/" className="flex items-center gap-2.5 mr-12">
-            <LogoIcon size="md" />
-            <span className="font-semibold text-lg tracking-tight" style={{ color: '#2560EA' }}>Thesis Generator</span>
+          <Link href="/" className="mr-12">
+            <LogoWithText size="md" />
           </Link>
 
           {/* Desktop Navigation - reordered, font-medium */}
           <div className="hidden md:flex items-center gap-7">
-            <Link href="#how-it-works" className="text-slate-500 hover:text-slate-800 transition-colors font-medium text-[15px]">
+            <Link href="#how-it-works" className="text-slate-600 hover:text-slate-900 transition-colors font-medium text-[15px]">
               How It Works
             </Link>
-            <Link href="#features" className="text-slate-500 hover:text-slate-800 transition-colors font-medium text-[15px]">
+            <Link href="#features" className="text-slate-600 hover:text-slate-900 transition-colors font-medium text-[15px]">
               Features
             </Link>
-            <Link href="#pricing" className="text-slate-500 hover:text-slate-800 transition-colors font-medium text-[15px]">
+            <Link href="#pricing" className="text-slate-600 hover:text-slate-900 transition-colors font-medium text-[15px]">
               Pricing
             </Link>
-            <Link href="/blog" className="text-slate-500 hover:text-slate-800 transition-colors font-medium text-[15px]">
+            <Link href="/blog" className="text-slate-600 hover:text-slate-900 transition-colors font-medium text-[15px]">
               Resources
             </Link>
           </div>
@@ -48,7 +47,7 @@ export function Navbar() {
             ) : (
               <>
                 <Link href="/auth/login">
-                  <Button variant="ghost" className="text-slate-500 hover:text-slate-700 font-medium h-9">Log in</Button>
+                  <Button variant="ghost" className="font-medium h-9">Log in</Button>
                 </Link>
                 <Link href="/auth/signup">
                   <Button size="sm" className="h-9 px-5 font-semibold">Start Free</Button>
@@ -59,47 +58,47 @@ export function Navbar() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-900"
             onClick={() => setIsOpen(!isOpen)}
           >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isOpen ? <X size={24} /> : <List size={24} />}
           </button>
         </div>
       </div>
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200/60">
+        <div className="md:hidden bg-white border-b border-slate-200">
           <div className="px-6 py-4 space-y-4">
             <Link 
               href="#how-it-works" 
-              className="block text-slate-500 hover:text-slate-800 transition-colors font-medium"
+              className="block text-slate-600 hover:text-slate-900 transition-colors font-medium"
               onClick={() => setIsOpen(false)}
             >
               How It Works
             </Link>
             <Link 
               href="#features" 
-              className="block text-slate-500 hover:text-slate-800 transition-colors font-medium"
+              className="block text-slate-600 hover:text-slate-900 transition-colors font-medium"
               onClick={() => setIsOpen(false)}
             >
               Features
             </Link>
             <Link 
               href="#pricing" 
-              className="block text-slate-500 hover:text-slate-800 transition-colors font-medium"
+              className="block text-slate-600 hover:text-slate-900 transition-colors font-medium"
               onClick={() => setIsOpen(false)}
             >
               Pricing
             </Link>
             <Link 
               href="/blog" 
-              className="block text-slate-500 hover:text-slate-800 transition-colors font-medium"
+              className="block text-slate-600 hover:text-slate-900 transition-colors font-medium"
               onClick={() => setIsOpen(false)}
             >
               Resources
             </Link>
-            <div className="pt-4 border-t border-slate-100 space-y-2">
+            <div className="pt-4 border-t border-slate-200 space-y-2">
               {user ? (
                 <Link href="/app" className="block">
                   <Button className="w-full font-semibold">Go to App</Button>

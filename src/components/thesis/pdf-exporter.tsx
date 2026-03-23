@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { SpinnerGap } from '@phosphor-icons/react';
 
 interface Chapter {
   chapter_number: number;
@@ -157,6 +157,10 @@ function getChapterContent(chapter: Chapter): ParsedContent {
         }
         sections.push({ type: 'subheading', level: 4, text: h4Match[1].replace(/\*\*/g, '') });
       } else {
+        // Skip standalone table/figure caption lines — these are rendered separately by renderTable/renderChart
+        if (/^(table|figure)\s+\d+[.:]/i.test(trimmed)) {
+          continue;
+        }
         // Clean bold markers and add to paragraph
         const cleaned = trimmed.replace(/\*\*(.+?)\*\*/g, '$1');
         currentParagraph += (currentParagraph ? ' ' : '') + cleaned;
@@ -167,8 +171,14 @@ function getChapterContent(chapter: Chapter): ParsedContent {
       sections.push({ type: 'paragraph', text: currentParagraph.trim() });
     }
     
+    // Filter out paragraphs that are just table/figure captions (rendered separately)
+    const filteredSections = sections.filter(s => {
+      if (s.type !== 'paragraph') return true;
+      return !/^(table|figure)\s+\d+[.:]\s/i.test(s.text);
+    });
+    
     return { 
-      sections, 
+      sections: filteredSections, 
       tables: data?.tables,
       charts: data?.charts 
     };
@@ -197,7 +207,7 @@ function renderTable(table: TableData, index: number): string {
         <thead>
           <tr style="background-color: ${headerColor};">
             ${table.columns.map(col => `
-              <th style="padding: 8px 10px; text-align: center; border: 0.5pt solid black; font-weight: bold;">
+              <th style="padding: 8px 10px; text-align: center; border: 0.5pt solid black; font-weight: bold; color: #1e293b;">
                 ${col || ''}
               </th>
             `).join('')}
@@ -415,7 +425,7 @@ export function PDFExporter({ thesis, onComplete, onError }: PDFExporterProps) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 flex items-center gap-3 shadow-xl">
-        <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+        <SpinnerGap size={20} className="animate-spin text-slate-600" />
         <span className="text-gray-700">
           {status === 'loading-footnotes' 
             ? 'Generating academic footnotes...' 

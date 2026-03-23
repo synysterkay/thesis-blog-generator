@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Calendar, Clock, User, Share2, Bookmark, Tag, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, ShareNetwork, BookmarkSimple, Tag, ArrowRight } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
 
 interface BlogPost {
@@ -66,14 +66,14 @@ export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClie
           >
             <Link 
               href="/blog" 
-              className="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 mb-8"
+              className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-8"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft size={16} />
               Back to blog
             </Link>
 
             <div className="flex items-center gap-3 mb-4">
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+              <span className="px-3 py-1 bg-slate-100 text-slate-900 text-sm font-medium rounded-full">
                 {post.category}
               </span>
             </div>
@@ -101,7 +101,7 @@ export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClie
 
             <div className="flex flex-wrap items-center gap-6 pb-8 border-b border-slate-200">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-900 font-bold">
                   {(post.author || 'TA').split(' ').map(n => n[0]).join('').substring(0, 2)}
                 </div>
                 <div>
@@ -111,23 +111,23 @@ export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClie
               </div>
               <div className="flex items-center gap-4 text-sm text-slate-500">
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
+                  <Calendar size={16} />
                   {post.date}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
+                  <Clock size={16} />
                   {post.readTime || '5 min read'}
                 </span>
               </div>
               <div className="flex items-center gap-2 ml-auto">
                 <button 
                   onClick={handleShare}
-                  className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                  className="p-2 text-slate-400 hover:text-slate-900 transition-colors"
                 >
-                  <Share2 className="w-5 h-5" />
+                  <ShareNetwork size={20} />
                 </button>
-                <button className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                  <Bookmark className="w-5 h-5" />
+                <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
+                  <BookmarkSimple size={20} />
                 </button>
               </div>
             </div>
@@ -138,7 +138,7 @@ export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClie
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="prose prose-lg prose-slate max-w-none mt-12 prose-headings:font-bold prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:mb-4 prose-li:ml-4 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline"
+            className="prose prose-lg max-w-none mt-12 prose-headings:font-bold prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:mb-4 prose-li:ml-4 prose-a:text-slate-900 prose-a:underline hover:prose-a:text-slate-600"
           >
             <ReactMarkdown>{post.content}</ReactMarkdown>
           </motion.div>
@@ -152,7 +152,7 @@ export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClie
               className="mt-12 pt-8 border-t border-slate-200"
             >
               <div className="flex items-center gap-2 flex-wrap">
-                <Tag className="w-4 h-4 text-slate-400" />
+                <Tag size={16} className="text-slate-400" />
                 {post.tags.map((tag) => (
                   <span
                     key={tag}
@@ -172,16 +172,16 @@ export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClie
             transition={{ delay: 0.3 }}
             className="mt-16"
           >
-            <Card className="p-8 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-center">
-              <h3 className="text-2xl font-bold mb-3">
+            <Card className="p-8 bg-slate-50 border border-slate-200 text-center">
+              <h3 className="text-2xl font-bold text-slate-900 mb-3">
                 Ready to Start Your Thesis?
               </h3>
-              <p className="text-blue-100 mb-6">
+              <p className="text-slate-600 mb-6">
                 Let Thesis Generator help you write your best academic work yet.
               </p>
               <Link
                 href="/auth/signup"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors"
               >
                 Get Started Free
               </Link>
@@ -201,10 +201,10 @@ export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClie
               <h2 className="text-2xl font-bold text-slate-900">Recommended Articles</h2>
               <Link 
                 href="/blog" 
-                className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                className="text-slate-900 hover:text-slate-600 font-medium flex items-center gap-1"
               >
                 View all articles
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight size={16} />
               </Link>
             </div>
             
@@ -217,8 +217,8 @@ export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClie
                   transition={{ delay: 0.4 + index * 0.1 }}
                 >
                   <Link href={`/blog/${relatedPost.slug}`}>
-                    <Card hover className="overflow-hidden h-full bg-white">
-                      <div className="aspect-[16/10] relative bg-gradient-to-br from-slate-100 to-slate-50">
+                    <Card hover className="overflow-hidden h-full bg-white border border-slate-200 shadow-sm">
+                      <div className="aspect-[16/10] relative bg-slate-50">
                         {relatedPost.image ? (
                           <Image
                             src={relatedPost.image}
@@ -234,7 +234,7 @@ export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClie
                       </div>
                       <div className="p-5">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-medium rounded">
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-xs font-medium rounded">
                             {relatedPost.category}
                           </span>
                         </div>
@@ -246,11 +246,11 @@ export default function BlogPostClient({ post, relatedPosts = [] }: BlogPostClie
                         </p>
                         <div className="flex items-center gap-3 text-xs text-slate-500">
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
+                            <Calendar size={12} />
                             {relatedPost.date}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
+                            <Clock size={12} />
                             {relatedPost.readTime || '5 min read'}
                           </span>
                         </div>

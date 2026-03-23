@@ -7,13 +7,13 @@ import { Footer } from '@/components/landing/footer';
 import { Card } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  HelpCircle, 
-  Search, 
-  ChevronDown,
+  Question, 
+  MagnifyingGlass, 
+  CaretDown,
   BookOpen,
-  MessageCircle,
-  Mail
-} from 'lucide-react';
+  ChatCircle,
+  Envelope
+} from '@phosphor-icons/react';
 
 const faqs = [
   {
@@ -127,14 +127,14 @@ export default function HelpPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-32 pb-12 bg-gradient-to-b from-blue-50 to-white">
+      <section className="pt-32 pb-12 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-              <HelpCircle className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-slate-700 flex items-center justify-center">
+              <Question size={32} className="text-white" />
             </div>
             <h1 className="text-4xl font-bold text-slate-900 mb-4">Help Center</h1>
             <p className="text-xl text-slate-600 mb-8">
@@ -143,13 +143,13 @@ export default function HelpPage() {
 
             {/* Search */}
             <div className="relative max-w-xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <MagnifyingGlass size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for answers..."
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
               />
             </div>
           </motion.div>
@@ -160,17 +160,17 @@ export default function HelpPage() {
       <section className="py-8 border-b border-slate-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid sm:grid-cols-3 gap-4">
-            <Link href="/documentation" className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all group">
-              <BookOpen className="w-5 h-5 text-slate-400 group-hover:text-blue-600" />
-              <span className="font-medium text-slate-700 group-hover:text-blue-600">Documentation</span>
+            <Link href="/documentation" className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-all group">
+              <BookOpen size={20} className="text-slate-400 group-hover:text-slate-600" />
+              <span className="font-medium text-slate-700 group-hover:text-slate-900">Documentation</span>
             </Link>
-            <Link href="/contact" className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all group">
-              <MessageCircle className="w-5 h-5 text-slate-400 group-hover:text-blue-600" />
-              <span className="font-medium text-slate-700 group-hover:text-blue-600">Chat Support</span>
+            <Link href="/contact" className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-all group">
+              <ChatCircle size={20} className="text-slate-400 group-hover:text-slate-600" />
+              <span className="font-medium text-slate-700 group-hover:text-slate-900">Chat Support</span>
             </Link>
-            <a href="mailto:hello@thesisgenerator.tech" className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all group">
-              <Mail className="w-5 h-5 text-slate-400 group-hover:text-blue-600" />
-              <span className="font-medium text-slate-700 group-hover:text-blue-600">Email Support</span>
+            <a href="mailto:hello@thesisgenerator.tech" className="flex items-center gap-3 p-4 rounded-xl border border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-all group">
+              <Envelope size={20} className="text-slate-400 group-hover:text-slate-600" />
+              <span className="font-medium text-slate-700 group-hover:text-slate-900">Email Support</span>
             </a>
           </div>
         </div>
@@ -200,8 +200,9 @@ export default function HelpPage() {
                         className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition-colors"
                       >
                         <span className="font-medium text-slate-900 pr-4">{faq.q}</span>
-                        <ChevronDown 
-                          className={`w-5 h-5 text-slate-400 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+                        <CaretDown 
+                          size={20}
+                          className={`text-slate-400 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
                         />
                       </button>
                       <AnimatePresence>
@@ -227,7 +228,7 @@ export default function HelpPage() {
           {filteredFaqs.length === 0 && (
             <div className="text-center py-12">
               <p className="text-slate-500 mb-4">No results found for &quot;{searchQuery}&quot;</p>
-              <Link href="/contact" className="text-blue-600 hover:underline">
+              <Link href="/contact" className="text-slate-600 hover:underline">
                 Contact support for help
               </Link>
             </div>
@@ -245,16 +246,16 @@ export default function HelpPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/contact"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-900 transition-colors"
             >
-              <MessageCircle className="w-5 h-5" />
+              <ChatCircle size={20} />
               Chat with AI Support
             </Link>
             <a
               href="mailto:hello@thesisgenerator.tech"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors"
             >
-              <Mail className="w-5 h-5" />
+              <Envelope size={20} />
               Email Us
             </a>
           </div>

@@ -3,15 +3,15 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { 
-  Upload, 
+  UploadSimple, 
   FileText, 
   X, 
-  Loader2, 
+  SpinnerGap, 
   CheckCircle, 
-  AlertCircle,
+  WarningCircle,
   Lock,
   Info
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -156,11 +156,11 @@ export function ReferenceUpload({ thesisId, isPremium, onDocumentsChange }: Refe
     switch (status) {
       case 'pending':
       case 'processing':
-        return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />;
+        return <SpinnerGap size={16} className="animate-spin text-slate-500" />;
       case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle size={16} className="text-slate-500" />;
       case 'failed':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
+        return <WarningCircle size={16} className="text-slate-500" />;
       default:
         return null;
     }
@@ -169,11 +169,11 @@ export function ReferenceUpload({ thesisId, isPremium, onDocumentsChange }: Refe
   return (
     <div className="space-y-4">
       {/* Header with info */}
-      <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-        <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-        <div className="text-sm text-blue-800">
-          <p className="font-medium">Reference Materials (Optional)</p>
-          <p className="text-blue-600 mt-1">
+      <div className="flex items-start gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+        <Info size={20} className="text-slate-400 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-slate-600">
+          <p className="font-medium text-slate-900">Reference Materials (Optional)</p>
+          <p className="text-slate-400 mt-1">
             Upload documents for the AI to reference during thesis generation. 
             The AI will cite and incorporate relevant information from these sources.
           </p>
@@ -185,18 +185,18 @@ export function ReferenceUpload({ thesisId, isPremium, onDocumentsChange }: Refe
         {...getRootProps()}
         className={`
           border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
-          ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-blue-400'}
+          ${isDragActive ? 'border-slate-400 bg-slate-50' : 'border-slate-300 hover:border-slate-400'}
           ${uploading || documents.length >= maxFiles ? 'opacity-50 cursor-not-allowed' : ''}
         `}
       >
         <input {...getInputProps()} />
-        <Upload className={`w-8 h-8 mx-auto mb-3 ${isDragActive ? 'text-blue-500' : 'text-slate-400'}`} />
+        <UploadSimple size={32} className={`mx-auto mb-3 ${isDragActive ? 'text-slate-900' : 'text-slate-500'}`} />
         
         {isDragActive ? (
-          <p className="text-blue-600 font-medium">Drop files here...</p>
+          <p className="text-slate-900 font-medium">Drop files here...</p>
         ) : uploading ? (
-          <div className="flex items-center justify-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="flex items-center justify-center gap-2 text-slate-400">
+            <SpinnerGap size={16} className="animate-spin" />
             <span>Uploading...</span>
           </div>
         ) : documents.length >= maxFiles ? (
@@ -206,7 +206,7 @@ export function ReferenceUpload({ thesisId, isPremium, onDocumentsChange }: Refe
             <p className="text-slate-600 font-medium">
               Drop files here or click to browse
             </p>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-slate-500 mt-1">
               {isPremium ? 'PDF, DOCX, TXT' : 'TXT only'} • Max {isPremium ? '20MB' : '5MB'} each
             </p>
           </>
@@ -216,17 +216,17 @@ export function ReferenceUpload({ thesisId, isPremium, onDocumentsChange }: Refe
       {/* Uploaded files list */}
       {documents.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-medium text-slate-700">
+          <p className="text-sm font-medium text-slate-600">
             Uploaded Files ({documents.length}/{maxFiles})
           </p>
           {documents.map((doc) => (
             <div
               key={doc.id}
-              className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border"
+              className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200"
             >
-              <FileText className="w-5 h-5 text-slate-500 flex-shrink-0" />
+              <FileText size={20} className="text-slate-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-800 truncate">
+                <p className="text-sm font-medium text-slate-900 truncate">
                   {doc.filename}
                 </p>
                 <p className="text-xs text-slate-500">
@@ -240,9 +240,9 @@ export function ReferenceUpload({ thesisId, isPremium, onDocumentsChange }: Refe
                 variant="ghost"
                 size="sm"
                 onClick={() => removeDocument(doc.id)}
-                className="h-8 w-8 p-0 text-slate-400 hover:text-red-500"
+                className="h-8 w-8 p-0 text-slate-500 hover:text-red-400"
               >
-                <X className="w-4 h-4" />
+                <X size={16} />
               </Button>
             </div>
           ))}

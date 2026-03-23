@@ -1,10 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none">
-  <rect x="3" y="1" width="10" height="14" rx="1" fill="#3B82F6"/>
-  <rect x="4" y="2" width="8" height="12" rx="0.5" fill="white"/>
-  <rect x="5" y="4" width="6" height="1" rx="0.25" fill="#E5E7EB"/>
-  <rect x="5" y="6" width="5" height="1" rx="0.25" fill="#E5E7EB"/>
-  <rect x="5" y="8" width="6" height="1" rx="0.25" fill="#E5E7EB"/>
-  <rect x="5" y="10" width="4" height="1" rx="0.25" fill="#E5E7EB"/>
-  <circle cx="12" cy="4" r="3" fill="#8B5CF6"/>
-  <path d="M12 2L12.5 3.5L14 4L12.5 4.5L12 6L11.5 4.5L10 4L11.5 3.5L12 2Z" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="16" height="16">
+  <g transform="translate(40, 28) scale(0.6875)">
+    <path d="M208,40V216H72V40Z" fill="rgba(15,23,42,0.08)"/>
+    <path d="M210,58.7A15.9,15.9,0,0,0,200,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V68.7A16.1,16.1,0,0,0,210,58.7ZM56,40H152V88h48V216H56ZM200,74.3V88H186.7Z" fill="#0f172a"/>
+    <rect x="88" y="120" width="80" height="12" rx="4" fill="#0f172a"/>
+    <rect x="88" y="148" width="80" height="12" rx="4" fill="#0f172a"/>
+    <rect x="88" y="176" width="56" height="12" rx="4" fill="#0f172a"/>
+  </g>
 </svg>

@@ -30,9 +30,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No active subscription found' }, { status: 404 });
     }
 
-    // Check if it's a lifetime subscription (can't be changed)
-    if (subscription.plan_type === 'lifetime' || subscription.lemonsqueezy_subscription_id.startsWith('lifetime-')) {
-      return NextResponse.json({ error: 'Lifetime subscriptions cannot be changed' }, { status: 400 });
+    // Non-subscription plans can't be changed via this endpoint
+    if (!subscription.lemonsqueezy_subscription_id) {
+      return NextResponse.json({ error: 'No subscription to modify' }, { status: 400 });
     }
 
     // Update subscription via LemonSqueezy API

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, Download, Loader2, Undo, Redo, Save } from 'lucide-react';
+import { X, DownloadSimple, SpinnerGap, ArrowCounterClockwise, ArrowClockwise, FloppyDisk } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 
 interface Chapter {
@@ -263,7 +263,7 @@ export function PDFEditor({ thesis, onClose, onDownload }: PDFEditorProps) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 flex items-center gap-3 shadow-xl">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+          <SpinnerGap size={20} className="animate-spin text-slate-600" />
           <span className="text-gray-700">Loading editor with footnotes...</span>
         </div>
       </div>
@@ -287,7 +287,7 @@ export function PDFEditor({ thesis, onClose, onDownload }: PDFEditorProps) {
               disabled={historyIndex <= 0}
               className="gap-1"
             >
-              <Undo className="w-4 h-4" />
+              <ArrowCounterClockwise size={16} />
               Undo
             </Button>
             <Button
@@ -297,7 +297,7 @@ export function PDFEditor({ thesis, onClose, onDownload }: PDFEditorProps) {
               disabled={historyIndex >= history.length - 1}
               className="gap-1"
             >
-              <Redo className="w-4 h-4" />
+              <ArrowClockwise size={16} />
               Redo
             </Button>
             <Button
@@ -305,7 +305,7 @@ export function PDFEditor({ thesis, onClose, onDownload }: PDFEditorProps) {
               size="sm"
               onClick={onClose}
             >
-              <X className="w-4 h-4" />
+              <X size={16} />
             </Button>
           </div>
         </div>
@@ -611,12 +611,12 @@ export function PDFEditor({ thesis, onClose, onDownload }: PDFEditorProps) {
             >
               {status === 'generating' ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <SpinnerGap size={16} className="animate-spin" />
                   Generating PDF...
                 </>
               ) : (
                 <>
-                  <Download className="w-4 h-4" />
+                  <DownloadSimple size={16} />
                   Download PDF
                 </>
               )}

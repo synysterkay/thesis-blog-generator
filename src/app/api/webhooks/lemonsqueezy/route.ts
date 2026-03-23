@@ -2,7 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 import { verifyWebhookSignature } from '@/lib/lemonsqueezy';
 import { NextResponse } from 'next/server';
 import { trackServerCompletePayment } from '@/lib/tiktok-server';
+import { trackMetaPurchase } from '@/lib/meta-server';
+import { enrollInSequence, deactivateSequence } from '@/lib/email/lifecycle-enroll';
 
+// Webhook handler v2 — reads custom_data from event.meta (fixed 2026-03-03)
 // Use service role for webhook processing
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,15 +13,41 @@ const supabase = createClient(
 );
 
 // Map variant IDs to plan types
-function getPlanTypeFromVariantId(variantId: string): 'monthly' | 'yearly' | 'lifetime' | null {
+function getPlanTypeFromVariantId(variantId: string): 'monthly' | 'unlimited' | null {
   const monthlyVariantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID;
-  const yearlyVariantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_YEARLY_VARIANT_ID;
-  const lifetimeVariantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID;
+  const unlimitedVariantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_UNLIMITED_VARIANT_ID;
 
   if (variantId === monthlyVariantId) return 'monthly';
-  if (variantId === yearlyVariantId) return 'yearly';
-  if (variantId === lifetimeVariantId) return 'lifetime';
+  if (variantId === unlimitedVariantId) return 'unlimited';
   return null;
+}
+
+/**
+ * Look up Facebook tracking cookies (fbc, fbp) from user metadata.
+ * These are stored during signup in raw_user_meta_data.
+ */
+async function getUserFbData(userId: string): Promise<{ fbc?: string; fbp?: string }> {
+  try {
+    const { data } = await supabase.auth.admin.getUserById(userId);
+    const meta = data?.user?.user_metadata;
+    return { fbc: meta?.fbc || undefined, fbp: meta?.fbp || undefined };
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Resolve a user_id from an email address by checking the profiles table.
+ * This is the reliable fallback when custom_data.user_id is missing.
+ */
+async function findUserByEmail(email: string): Promise<string | null> {
+  if (!email) return null;
+  const { data } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email.toLowerCase())
+    .single();
+  return data?.id || null;
 }
 
 export async function POST(request: Request) {
@@ -44,47 +73,38 @@ export async function POST(request: Request) {
     console.log('Webhook meta.custom_data:', JSON.stringify(event.meta?.custom_data));
     console.log('Webhook data.attributes:', JSON.stringify(data.attributes, null, 2).substring(0, 1000));
 
+    // --- Product filtering: only process events for Thesis Generator products ---
+    const THESIS_VARIANT_IDS = new Set(
+      [
+        process.env.NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID,
+        process.env.NEXT_PUBLIC_LEMONSQUEEZY_UNLIMITED_VARIANT_ID,
+        process.env.NEXT_PUBLIC_LEMONSQUEEZY_EXPORT_VARIANT_ID,
+      ].filter(Boolean)
+    );
+
+    const eventVariantId =
+      data.attributes?.variant_id?.toString() ||
+      data.attributes?.first_order_item?.variant_id?.toString();
+
+    if (eventVariantId && !THESIS_VARIANT_IDS.has(eventVariantId)) {
+      console.log(`Skipping event — variant ${eventVariantId} is not a Thesis Generator product`);
+      return NextResponse.json({ received: true, skipped: true });
+    }
+
     switch (eventName) {
       case 'subscription_created':
       case 'subscription_updated': {
         // LemonSqueezy sends checkout custom data in event.meta.custom_data
         const customData = event.meta?.custom_data || data.attributes.custom_data || {};
         let userId = customData.user_id;
-        const isGuestCheckout = customData.guest_checkout === 'true';
         const customerEmail = data.attributes.user_email || data.attributes.customer_email;
         
-        // For guest checkouts, try to find the user by email or store for later linking
-        if (!userId && isGuestCheckout && customerEmail) {
-          console.log(`Guest checkout subscription for email: ${customerEmail}`);
-          
-          // Try to find user by email
-          const { data: userData } = await supabase
-            .from('auth.users')
-            .select('id')
-            .eq('email', customerEmail.toLowerCase())
-            .single();
-          
-          if (userData) {
-            userId = userData.id;
-            console.log(`Found user ${userId} for guest checkout email ${customerEmail}`);
-          } else {
-            // Check pending subscription links
-            const { data: pendingLink } = await supabase
-              .from('pending_subscription_links')
-              .select('user_id')
-              .eq('email', customerEmail.toLowerCase())
-              .single();
-            
-            if (pendingLink) {
-              userId = pendingLink.user_id;
-              console.log(`Found pending link for user ${userId}`);
-              
-              // Delete the pending link
-              await supabase
-                .from('pending_subscription_links')
-                .delete()
-                .eq('email', customerEmail.toLowerCase());
-            }
+        // If no user_id from custom_data, look up by email (covers guest checkouts + any missed custom_data)
+        if (!userId && customerEmail) {
+          console.log(`No user_id in custom_data — looking up by email: ${customerEmail}`);
+          userId = await findUserByEmail(customerEmail);
+          if (userId) {
+            console.log(`Found user ${userId} by email ${customerEmail}`);
           }
         }
         
@@ -158,20 +178,34 @@ export async function POST(request: Request) {
         } else {
           console.log(`Subscription created/updated for user ${userId}, plan: ${planType}, status: ${status}`);
           
-          // Track TikTok CompletePayment event
+          // Track conversions on new active subscription (payment)
           if (eventName === 'subscription_created' && status === 'active') {
             const priceMap: Record<string, number> = {
-              monthly: 9.99,
-              yearly: 79.99,
-              lifetime: 199.99,
+              monthly: 9,
+              unlimited: 19,
             };
+            const trackValue = priceMap[planType || 'monthly'] || 9.99;
+
+            // TikTok CompletePayment
             await trackServerCompletePayment({
               email: customerEmail,
               userId,
               contentId: planType || 'subscription',
               contentName: `Thesis Generator ${planType || 'subscription'}`,
-              value: priceMap[planType || 'monthly'] || 9.99,
+              value: trackValue,
               currency: 'USD',
+            });
+
+            // Meta (Facebook) Conversions API — Purchase event
+            const fbData = userId ? await getUserFbData(userId) : {};
+            await trackMetaPurchase({
+              email: customerEmail,
+              userId,
+              fbc: fbData.fbc,
+              fbp: fbData.fbp,
+              value: trackValue,
+              contentName: `Thesis Generator ${planType || 'subscription'}`,
+              contentId: planType || 'subscription',
             });
 
             // Mark email lead as converted (stop drip sequence)
@@ -181,6 +215,11 @@ export async function POST(request: Request) {
                 .update({ converted: true, sequence_active: false })
                 .eq('email', customerEmail.toLowerCase());
             }
+
+            // Lifecycle: enroll in retention, deactivate conversion
+            await enrollInSequence(supabase, userId, customerEmail, 'retention');
+            await deactivateSequence(supabase, userId, 'conversion');
+            await deactivateSequence(supabase, userId, 'onboarding');
           }
         }
         break;
@@ -188,9 +227,21 @@ export async function POST(request: Request) {
 
       case 'subscription_cancelled': {
         const customData = event.meta?.custom_data || data.attributes.custom_data || {};
-        const userId = customData.user_id;
+        let userId = customData.user_id;
+        const cancelEmail = data.attributes.user_email || data.attributes.customer_email;
+
+        if (!userId && cancelEmail) {
+          userId = await findUserByEmail(cancelEmail);
+        }
         if (!userId) {
-          console.error('No user_id in cancelled subscription custom_data');
+          // Last resort: try by LS subscription ID
+          const subId = data.id?.toString();
+          if (subId) {
+            await supabase.from('subscriptions').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('lemonsqueezy_subscription_id', subId);
+            console.log(`Cancelled subscription by LS ID ${subId} (no user_id)`);
+          } else {
+            console.error('No user_id or subscription_id in cancelled event');
+          }
           break;
         }
 
@@ -209,12 +260,18 @@ export async function POST(request: Request) {
       }
 
       case 'order_created': {
-        // Handle one-time purchases (lifetime or single export)
+        // Handle one-time purchases (single export)
         // LemonSqueezy sends checkout custom data in event.meta.custom_data
         const customData = event.meta?.custom_data || data.attributes.custom_data || {};
-        const userId = customData.user_id;
+        let userId = customData.user_id;
+        const orderEmail = data.attributes.user_email || data.attributes.customer_email;
+
+        if (!userId && orderEmail) {
+          userId = await findUserByEmail(orderEmail);
+          if (userId) console.log(`Found user ${userId} by email for order`);
+        }
         if (!userId) {
-          console.error('No user_id in order custom_data. Full data:', JSON.stringify(data, null, 2));
+          console.error('No user_id in order — email lookup also failed. Email:', orderEmail);
           break;
         }
 
@@ -222,57 +279,13 @@ export async function POST(request: Request) {
         const variantId = data.attributes.first_order_item?.variant_id?.toString() ||
                           data.attributes.variant_id?.toString();
         const exportVariantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_EXPORT_VARIANT_ID;
-        const lifetimeVariantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID;
         
-        const isLifetime = variantId === lifetimeVariantId;
         const isExport = variantId === exportVariantId;
         const thesisId = customData.thesis_id;
         
-        console.log(`Order webhook: userId=${userId}, variantId=${variantId}, exportVariantId=${exportVariantId}, isLifetime=${isLifetime}, isExport=${isExport}, thesisId=${thesisId}`);
+        console.log(`Order webhook: userId=${userId}, variantId=${variantId}, exportVariantId=${exportVariantId}, isExport=${isExport}, thesisId=${thesisId}`);
 
-        if (isLifetime) {
-          const { error } = await supabase
-            .from('subscriptions')
-            .upsert({
-              user_id: userId,
-              lemonsqueezy_subscription_id: `lifetime-${data.id}`,
-              lemonsqueezy_customer_id: data.attributes.customer_id?.toString(),
-              plan_id: variantId,
-              plan_type: 'lifetime',
-              status: 'active',
-              current_period_start: new Date().toISOString(),
-              current_period_end: null, // Lifetime has no end
-              cancel_at_period_end: false,
-              updated_at: new Date().toISOString(),
-            }, {
-              onConflict: 'user_id'
-            });
-
-          if (error) {
-            console.error('Error creating lifetime subscription:', error);
-          } else {
-            console.log(`Lifetime subscription created for user ${userId}`);
-            
-            // Track TikTok CompletePayment for lifetime purchase
-            const customerEmail = data.attributes.user_email || data.attributes.customer_email;
-            await trackServerCompletePayment({
-              email: customerEmail,
-              userId,
-              contentId: 'lifetime',
-              contentName: 'Thesis Generator Lifetime',
-              value: 199.99,
-              currency: 'USD',
-            });
-
-            // Mark email lead as converted (stop drip sequence)
-            if (customerEmail) {
-              await (supabase as any)
-                .from('email_leads')
-                .update({ converted: true, sequence_active: false })
-                .eq('email', customerEmail.toLowerCase());
-            }
-          }
-        } else if (isExport && thesisId) {
+        if (isExport && thesisId) {
           // Single export unlock purchase
           console.log(`Creating export unlock for thesis ${thesisId}`);
           
@@ -299,8 +312,20 @@ export async function POST(request: Request) {
               userId,
               contentId: 'export',
               contentName: 'Single Export Unlock',
-              value: 4.99,
+              value: 4,
               currency: 'USD',
+            });
+
+            // Meta (Facebook) Conversions API — Purchase event
+            const fbData = userId ? await getUserFbData(userId) : {};
+            await trackMetaPurchase({
+              email: customerEmail,
+              userId,
+              fbc: fbData.fbc,
+              fbp: fbData.fbp,
+              value: 4,
+              contentName: 'Single Export Unlock',
+              contentId: 'export',
             });
           }
         }

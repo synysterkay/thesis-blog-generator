@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Check, ArrowLeft, Loader2 } from 'lucide-react';
+import { Check, ArrowLeft, SpinnerGap } from '@phosphor-icons/react';
 import { PRICING_PLANS } from '@/lib/constants';
 import { toast } from 'sonner';
 
@@ -52,7 +52,7 @@ export default function UpgradePage() {
           onClick={() => router.back()}
           className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft size={16} />
           Back
         </button>
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Upgrade Your Plan</h1>
@@ -63,20 +63,17 @@ export default function UpgradePage() {
 
       {/* Current Plan - Only show for paid subscribers */}
       {subscription?.isActive && subscription?.isPremium && (
-        <Card className="p-4 mb-8 bg-green-50 border-green-200">
+        <Card className="p-4 mb-8 bg-white border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-              <Check className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+              <Check size={20} className="text-slate-900" />
             </div>
             <div>
-              <p className="font-medium text-green-900">
-                You&apos;re on the {subscription.planType === 'lifetime' ? 'Lifetime' : 
-                  subscription.planType === 'yearly' ? 'Pro (Yearly)' : 'Pro (Monthly)'} plan
+              <p className="font-medium text-slate-900">
+                You&apos;re on the {subscription.planType === 'unlimited' ? 'Pro Unlimited' : 'Pro'} plan
               </p>
-              <p className="text-sm text-green-700">
-                {subscription.planType === 'lifetime' 
-                  ? 'Lifetime access with no recurring charges'
-                  : `Renews on ${subscription.renewsAt ? new Date(subscription.renewsAt).toLocaleDateString() : 'N/A'}`
+              <p className="text-sm text-slate-600">
+                {`Renews on ${subscription.renewsAt ? new Date(subscription.renewsAt).toLocaleDateString() : 'N/A'}`
                 }
               </p>
             </div>
@@ -85,47 +82,37 @@ export default function UpgradePage() {
       )}
 
       {/* Pricing Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {PRICING_PLANS.map((plan) => (
           <Card 
             key={plan.id}
             className={`p-6 relative ${
               plan.popular 
-                ? 'border-blue-500 border-2 shadow-xl' 
+                ? 'border-slate-300 border-2 shadow-xl shadow-slate-200/50' 
                 : ''
             }`}
           >
             {plan.popular && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-blue-500 text-white text-xs font-semibold">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-semibold">
                 MOST POPULAR
               </div>
             )}
 
             <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-semibold text-lg text-slate-900">{plan.name}</h3>
-                {plan.badge && (
-                  <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                    {plan.badge}
-                  </span>
-                )}
-              </div>
+              <h3 className="font-semibold text-lg text-slate-900 mb-2">{plan.name}</h3>
               <div className="flex items-baseline gap-1 mb-1">
                 <span className="text-3xl font-bold text-slate-900">{plan.price === 0 ? 'Free' : `$${plan.price}`}</span>
                 {plan.price > 0 && (
-                  <span className="text-slate-500">/{plan.interval === 'lifetime' ? 'once' : plan.interval}</span>
+                  <span className="text-slate-600">/mo</span>
                 )}
               </div>
-              {plan.savings && (
-                <p className="text-sm text-green-600">{plan.savings}</p>
-              )}
             </div>
 
             <ul className="space-y-2 mb-6">
               {plan.features.map((feature) => (
                 <li key={feature} className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-slate-700 text-sm">{feature}</span>
+                  <Check size={16} className="text-slate-900 flex-shrink-0 mt-0.5" />
+                  <span className="text-slate-600 text-sm">{feature}</span>
                 </li>
               ))}
             </ul>
@@ -146,7 +133,7 @@ export default function UpgradePage() {
               >
                 {loading === plan.id ? (
                   <>
-                    <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                    <SpinnerGap size={16} className="mr-2 animate-spin" />
                     Processing...
                   </>
                 ) : (
@@ -162,11 +149,11 @@ export default function UpgradePage() {
       <div className="mt-12 text-center">
         <p className="text-slate-600 mb-4">
           Questions about pricing?{' '}
-          <a href="mailto:hello@thesisgenerator.io" className="text-blue-600 hover:underline">
+          <a href="mailto:hello@thesisgenerator.io" className="text-slate-900 hover:underline">
             Contact us
           </a>
         </p>
-        <div className="flex items-center justify-center gap-6 text-sm text-slate-500">
+        <div className="flex items-center justify-center gap-6 text-sm text-slate-600">
           <span>🔒 Secure checkout</span>
           <span>💳 Cancel anytime</span>
           <span>📧 24/7 support</span>

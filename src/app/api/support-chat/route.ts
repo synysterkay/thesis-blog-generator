@@ -7,7 +7,7 @@ const SYSTEM_PROMPT = `You are Thesis Generator's friendly and helpful support a
 Key information about Thesis Generator:
 - Thesis Generator generates complete academic theses (90+ pages) with proper structure
 - Features: Auto-generated tables & charts, PDF/DOCX/LaTeX export, human-like academic writing
-- Pricing: Monthly ($9.99), Yearly ($79.99 - save 33%), Lifetime ($199.99)
+- Pricing: Pro ($9/mo, 5 theses), Pro Unlimited ($19/mo, unlimited theses), One-time export ($4)
 - Free tier: 1 thesis per month, 5 chapters max, basic text export
 - Pro features: Unlimited thesis generation, tables & charts, priority support
 

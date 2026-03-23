@@ -12,27 +12,29 @@ import { PDFExporter } from '@/components/thesis/pdf-exporter';
 import { PDFEditor } from '@/components/thesis/pdf-editor';
 import { ThesisHTMLPreview } from '@/components/thesis/thesis-html-preview';
 import { ExportPaywall } from '@/components/export-paywall';
+import { ReferralDownsell } from '@/components/referral-downsell';
 import { ThesisExpiryTimer } from '@/components/thesis-expiry-timer';
+import { trackClarityEvent } from '@/lib/clarity';
 import { 
   ArrowLeft,
   Play,
-  Download,
+  DownloadSimple,
   FileText,
   Check,
-  Loader2,
+  SpinnerGap,
   Clock,
-  ChevronRight,
-  ChevronDown,
+  CaretRight,
+  CaretDown,
   BookOpen,
   Lock,
-  Sparkles,
-  Trash2,
+  Sparkle,
+  Trash,
   Bell,
-  Edit,
-  Shield,
+  PencilSimple,
+  ShieldCheck,
   Eye,
   X
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Thesis, Chapter } from '@/types';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -78,6 +80,85 @@ const sendBrowserNotification = (title: string, body: string, icon?: string) => 
   };
 };
 
+// Social proof messages that rotate during generation
+const SOCIAL_PROOF_MESSAGES = [
+  '12,847 theses generated and counting',
+  'Students save an average of 47 hours',
+  'Used by researchers at 200+ universities',
+  'Average thesis grade: A-',
+  '98% of users recommend Thesis Generator',
+  'Most popular field: Computer Science',
+  'Average thesis: 12,000 words in 8 minutes',
+];
+
+function SocialProofTicker() {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex(prev => (prev + 1) % SOCIAL_PROOF_MESSAGES.length);
+        setVisible(true);
+      }, 300);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-2 text-[11px] text-slate-600">
+      <Sparkle size={12} className="text-slate-600 flex-shrink-0" />
+      <span
+        className="transition-opacity duration-300"
+        style={{ opacity: visible ? 1 : 0 }}
+      >
+        {SOCIAL_PROOF_MESSAGES[index]}
+      </span>
+    </div>
+  );
+}
+
+// SVG animated progress ring for the generation screen
+function ProgressRing({ progress, size = 120, stroke = 6 }: { progress: number; size?: number; stroke?: number }) {
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+  
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        {/* Background ring */}
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke}
+        />
+        {/* Progress ring */}
+        <circle
+          cx={size / 2} cy={size / 2} r={radius}
+          fill="none" stroke="url(#progressGrad)" strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="transition-[stroke-dashoffset] duration-700 ease-out"
+        />
+        <defs>
+          <linearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="#94a3b8" />
+          </linearGradient>
+        </defs>
+      </svg>
+      {/* Center text */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold text-slate-900 tabular-nums">
+          {Number.isInteger(progress) ? progress : progress.toFixed(1)}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function ThesisPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const searchParams = useSearchParams();
@@ -90,13 +171,21 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportPaywallOpen, setExportPaywallOpen] = useState(false);
+  const [referralDownsellOpen, setReferralDownsellOpen] = useState(false);
+  const [paywallClosedOnce, setPaywallClosedOnce] = useState(false);
   const [exporting, setExporting] = useState<'pdf' | 'docx' | 'latex' | null>(null);
   const [showPDFExporter, setShowPDFExporter] = useState(false);
   const [showPDFEditor, setShowPDFEditor] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [hasExportUnlock, setHasExportUnlock] = useState(false);;
+  const [displayProgress, setDisplayProgress] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    const saved = sessionStorage.getItem(`progress-${resolvedParams.id}`);
+    return saved ? parseFloat(saved) : 0;
+  });
   const previousStatusRef = useRef<string | null>(null);
+  const realProgressRef = useRef(0);
   const router = useRouter();
   const { user } = useAuth();
   const supabase = createClient();
@@ -229,6 +318,19 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
       // Initialize previous status for completion detection
       previousStatusRef.current = thesisData.status;
 
+      // If thesis looks stuck in generating, poke the resume endpoint to restart the chain.
+      // The backend cron handles this too, but this gives instant recovery when the user views the page.
+      if (thesisData.status === 'generating' && thesisData.updated_at) {
+        const updatedAt = new Date(thesisData.updated_at).getTime();
+        const now = Date.now();
+        const STUCK_THRESHOLD_MS = 6 * 60 * 1000; // 6 minutes (> one chapter cycle)
+        if (now - updatedAt > STUCK_THRESHOLD_MS) {
+          console.log('⚠️ Generation may be stalled — poking resume endpoint');
+          fetch('/api/generate/resume').catch(() => {});
+          toast.info('Generation is resuming — please wait, your thesis is being built chapter by chapter.');
+        }
+      }
+
       // Fetch chapters
       const { data: chaptersData } = await supabase
         .from('chapters')
@@ -238,6 +340,40 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
 
       setChapters(chaptersData || []);
       setLoading(false);
+
+      // Auto-start generation if arriving from thesis creation
+      if (searchParams.get('autostart') === 'true' && thesisData.status === 'draft') {
+        // Small delay to let UI render first
+        setTimeout(async () => {
+          try {
+            // Optimistically update UI
+            setThesis({ ...thesisData, status: 'generating' });
+            previousStatusRef.current = 'generating';
+            if (chaptersData && chaptersData.length > 0) {
+              setChapters(chaptersData.map((ch: Chapter, idx: number) => ({
+                ...ch,
+                status: idx === 0 ? 'generating' : (ch.status === 'locked' ? 'locked' : 'pending')
+              })));
+            }
+
+            const response = await fetch('/api/generate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ thesisId: thesisData.id }),
+            });
+            if (!response.ok) {
+              const data = await response.json();
+              setThesis({ ...thesisData, status: 'draft' });
+              previousStatusRef.current = 'draft';
+              toast.error(data.error || 'Generation failed');
+            }
+          } catch {
+            setThesis({ ...thesisData, status: 'draft' });
+            previousStatusRef.current = 'draft';
+            toast.error('Failed to start generation');
+          }
+        }, 300);
+      }
     };
 
     fetchThesis();
@@ -313,42 +449,35 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
     // Polling fallback: Check every 5 seconds if thesis is generating
     // This ensures updates are shown even if real-time subscription misses events
     const pollInterval = setInterval(async () => {
-      // Get current thesis state from ref to avoid stale closure
+      if (previousStatusRef.current !== 'generating') return;
+
+      // Refresh chapters every 5s during generation for live progress
+      const { data: updatedChapters } = await supabase
+        .from('chapters')
+        .select('*')
+        .eq('thesis_id', resolvedParams.id)
+        .order('chapter_number', { ascending: true });
+
+      if (updatedChapters) {
+        setChapters(updatedChapters);
+
+        // Auto-expand the chapter currently generating
+        const gen = updatedChapters.find(c => c.status === 'generating');
+        if (gen) setExpandedChapters(prev => new Set([...prev, gen.id]));
+      }
+
+      // Check if thesis completed
       const { data: currentThesis } = await supabase
         .from('theses')
-        .select('status')
+        .select('*')
         .eq('id', resolvedParams.id)
         .single();
-      
-      if (currentThesis && previousStatusRef.current === 'generating') {
-        // If we thought it was generating, check if it completed
-        if (currentThesis.status === 'completed') {
-          console.log('🔄 Polling detected completion');
-          
-          // Fetch full thesis data
-          const { data: fullThesis } = await supabase
-            .from('theses')
-            .select('*')
-            .eq('id', resolvedParams.id)
-            .single();
-          
-          if (fullThesis) {
-            handleThesisCompletion(fullThesis.title);
-            setThesis(fullThesis);
-            previousStatusRef.current = 'completed';
-          }
-          
-          // Fetch updated chapters
-          const { data: updatedChapters } = await supabase
-            .from('chapters')
-            .select('*')
-            .eq('thesis_id', resolvedParams.id)
-            .order('chapter_number', { ascending: true });
-          
-          if (updatedChapters) {
-            setChapters(updatedChapters);
-          }
-        }
+
+      if (currentThesis?.status === 'completed') {
+        console.log('🔄 Polling detected completion');
+        handleThesisCompletion(currentThesis.title);
+        setThesis(currentThesis);
+        previousStatusRef.current = 'completed';
       }
     }, 5000);
 
@@ -424,6 +553,7 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
         throw new Error(data.error || 'Generation failed');
       }
 
+      trackClarityEvent('generation_started');
       toast.success('Generation started! Please stay on this page until complete.');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to start generation';
@@ -510,6 +640,7 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
 
     // For PDF, use client-side generation
     if (format === 'pdf') {
+      trackClarityEvent('export_pdf');
       setExportModalOpen(false);
       setShowPDFExporter(true);
       return;
@@ -567,22 +698,127 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
   const chapterStatusIcon = (status: Chapter['status']) => {
     switch (status) {
       case 'completed':
-        return <Check className="w-4 h-4 text-green-600" />;
+        return <Check size={16} className="text-slate-900" />;
       case 'generating':
-        return <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />;
+        return <SpinnerGap size={16} className="text-slate-900 animate-spin" />;
       case 'editing':
-        return <FileText className="w-4 h-4 text-orange-600" />;
+        return <FileText size={16} className="text-slate-600" />;
       case 'locked':
-        return <Lock className="w-4 h-4 text-slate-400" />;
+        return <Lock size={16} className="text-slate-600" />;
       default:
-        return <Clock className="w-4 h-4 text-slate-400" />;
+        return <Clock size={16} className="text-slate-600" />;
     }
   };
+
+  // Calculate granular progress based on outlines, not just chapters
+  // Must be before early returns so the useEffect below (a hook) is always called
+  const calculateProgress = () => {
+    if (!thesis) return 0;
+    const nonLockedChapters = chapters.filter(c => c.status !== 'locked');
+    if (nonLockedChapters.length === 0) return 0;
+    
+    // If thesis is generating but no chapters started yet, show a smooth initial ramp
+    if (thesis.status === 'generating' && nonLockedChapters.every(c => c.status === 'pending')) {
+      return 3;
+    }
+    
+    // Calculate total outlines across all chapters for more granular progress
+    let totalOutlinesAcrossAll = 0;
+    let completedOutlinesAcrossAll = 0;
+    
+    for (const chapter of nonLockedChapters) {
+      // Parse chapter content to get outline info
+      let chapterTotalOutlines = 1;
+      let chapterCompletedOutlines = 0;
+      
+      try {
+        const content = typeof chapter.content === 'string' 
+          ? JSON.parse(chapter.content) 
+          : chapter.content;
+        
+        if (content?.totalOutlines && content.totalOutlines > 0) {
+          chapterTotalOutlines = content.totalOutlines;
+        } else if (content?.subchapters?.length > 0) {
+          chapterTotalOutlines = content.subchapters.length;
+        } else if (content?.subchaptersWithVisuals?.length > 0) {
+          chapterTotalOutlines = content.subchaptersWithVisuals.length;
+        }
+        
+        if (chapter.status === 'completed') {
+          chapterCompletedOutlines = chapterTotalOutlines;
+        } else if (chapter.status === 'generating') {
+          const currentIdx = content?.currentOutlineIndex ?? 0;
+          chapterCompletedOutlines = currentIdx + 0.5;
+        }
+        
+      } catch {
+        if (chapter.status === 'completed') {
+          chapterCompletedOutlines = 1;
+        } else if (chapter.status === 'generating') {
+          chapterCompletedOutlines = 0.5;
+        }
+      }
+      
+      totalOutlinesAcrossAll += chapterTotalOutlines;
+      completedOutlinesAcrossAll += chapterCompletedOutlines;
+    }
+    
+    if (totalOutlinesAcrossAll === 0) return 0;
+    
+    const rawProgress = (completedOutlinesAcrossAll / totalOutlinesAcrossAll) * 100;
+    
+    if (thesis.status === 'generating' && rawProgress < 5) {
+      return 5;
+    }
+    
+    if (thesis.status === 'generating' && rawProgress >= 100) {
+      return 99;
+    }
+    
+    return Math.round(rawProgress);
+  };
+  
+  const overallProgress = calculateProgress();
+  realProgressRef.current = overallProgress;
+
+  // Smooth progress ticker — MUST be called before early returns (Rules of Hooks)
+  useEffect(() => {
+    // Don't overwrite sessionStorage-restored value while still loading
+    if (!thesis) return;
+
+    if (thesis.status !== 'generating') {
+      setDisplayProgress(overallProgress);
+      if (thesis.status === 'completed') {
+        sessionStorage.removeItem(`progress-${resolvedParams.id}`);
+      }
+      return;
+    }
+
+    setDisplayProgress(prev => Math.max(prev, overallProgress));
+
+    const interval = setInterval(() => {
+      setDisplayProgress(prev => {
+        const real = realProgressRef.current;
+        const ceiling = Math.min(real + 4, 99);
+        if (prev >= ceiling) return prev;
+        const increment = 0.1 + Math.random() * 0.2;
+        const next = Math.min(prev + increment, ceiling);
+        sessionStorage.setItem(`progress-${resolvedParams.id}`, next.toString());
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [thesis?.status, overallProgress, resolvedParams.id]);
+
+  const shownProgress = thesis?.status === 'generating'
+    ? Math.round(displayProgress * 10) / 10
+    : overallProgress;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <SpinnerGap size={32} className="animate-spin text-slate-900" />
       </div>
     );
   }
@@ -602,99 +838,22 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
     return 'Section';
   };
 
-  // Calculate granular progress based on outlines, not just chapters
-  const calculateProgress = () => {
-    const nonLockedChapters = chapters.filter(c => c.status !== 'locked');
-    if (nonLockedChapters.length === 0) return 0;
-    
-    // If thesis is generating but no chapters started yet, show 1%
-    if (thesis.status === 'generating' && nonLockedChapters.every(c => c.status === 'pending')) {
-      return 1;
-    }
-    
-    // Calculate total outlines across all chapters for more granular progress
-    let totalOutlinesAcrossAll = 0;
-    let completedOutlinesAcrossAll = 0;
-    
-    for (const chapter of nonLockedChapters) {
-      // Parse chapter content to get outline info
-      let chapterTotalOutlines = 1; // Default to 1 for chapters without outlines (intro/conclusion/refs)
-      let chapterCompletedOutlines = 0;
-      
-      try {
-        const content = typeof chapter.content === 'string' 
-          ? JSON.parse(chapter.content) 
-          : chapter.content;
-        
-        // Get total outlines for this chapter
-        if (content?.totalOutlines && content.totalOutlines > 0) {
-          chapterTotalOutlines = content.totalOutlines;
-        } else if (content?.subchapters?.length > 0) {
-          chapterTotalOutlines = content.subchapters.length;
-        } else if (content?.subchaptersWithVisuals?.length > 0) {
-          chapterTotalOutlines = content.subchaptersWithVisuals.length;
-        }
-        
-        // Calculate completed outlines based on status
-        if (chapter.status === 'completed') {
-          chapterCompletedOutlines = chapterTotalOutlines;
-        } else if (chapter.status === 'generating') {
-          // Currently generating - use currentOutlineIndex
-          const currentIdx = content?.currentOutlineIndex ?? 0;
-          // Add 0.5 to show we're partway through current outline
-          chapterCompletedOutlines = currentIdx + 0.5;
-        }
-        // pending chapters contribute 0 completed outlines
-        
-      } catch {
-        // If parsing fails, use defaults
-        if (chapter.status === 'completed') {
-          chapterCompletedOutlines = 1;
-        } else if (chapter.status === 'generating') {
-          chapterCompletedOutlines = 0.5;
-        }
-      }
-      
-      totalOutlinesAcrossAll += chapterTotalOutlines;
-      completedOutlinesAcrossAll += chapterCompletedOutlines;
-    }
-    
-    if (totalOutlinesAcrossAll === 0) return 0;
-    
-    // Calculate percentage, minimum 1% if generating, max 99% until fully complete
-    const rawProgress = (completedOutlinesAcrossAll / totalOutlinesAcrossAll) * 100;
-    
-    // Ensure we show at least 2% once generation has started
-    if (thesis.status === 'generating' && rawProgress < 2) {
-      return 2;
-    }
-    
-    // Cap at 99% until thesis status is actually completed
-    if (thesis.status === 'generating' && rawProgress >= 100) {
-      return 99;
-    }
-    
-    return Math.round(rawProgress);
-  };
-  
-  const overallProgress = calculateProgress();
-
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <button
           onClick={() => router.push('/app/theses')}
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 mb-3"
+          className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 mb-3"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft size={14} />
           Back to Theses
         </button>
 
         <div className="flex flex-col gap-3">
           <div>
             <h1 className="text-xl font-semibold text-slate-900 mb-1">{thesis.title}</h1>
-            <div className="flex items-center gap-3 text-xs text-slate-500">
+            <div className="flex items-center gap-3 text-xs text-slate-600">
               <span>{thesis.academic_field || 'General'}</span>
               <span>•</span>
               <span className="capitalize">{thesis.writing_style}</span>
@@ -709,49 +868,51 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                 <Button size="sm" onClick={startGeneration} disabled={generating}>
                   {generating ? (
                     <>
-                      <Loader2 className="mr-1.5 w-3.5 h-3.5 animate-spin" />
+                      <SpinnerGap className="mr-1.5 animate-spin" size={14} />
                       Starting...
                     </>
                   ) : (
                     <>
-                      <Play className="mr-1.5 w-3.5 h-3.5" />
+                      <Play className="mr-1.5" size={14} />
                       Generate
                     </>
                   )}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={deleteThesis} disabled={deleting} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                  <Trash2 className="w-3.5 h-3.5" />
+                <Button variant="ghost" size="sm" onClick={deleteThesis} disabled={deleting} className="text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                  <Trash size={14} />
                 </Button>
               </>
             ) : thesis.status === 'generating' ? (
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm" disabled>
-                  <Loader2 className="mr-1.5 w-3.5 h-3.5 animate-spin" />
+                  <SpinnerGap className="mr-1.5 animate-spin" size={14} />
                   Generating...
                 </Button>
                 {!notificationsEnabled && 'Notification' in window && Notification.permission !== 'denied' && (
                   <Button variant="outline" size="sm" onClick={enableNotifications} title="Get notified when complete">
-                    <Bell className="mr-1.5 w-3.5 h-3.5" />
+                    <Bell className="mr-1.5" size={14} />
                     Notify Me
                   </Button>
                 )}
                 {notificationsEnabled && (
-                  <Button variant="ghost" size="sm" disabled className="text-green-600">
-                    <Bell className="mr-1.5 w-3.5 h-3.5" />
+                  <Button variant="ghost" size="sm" disabled className="text-slate-900">
+                    <Bell className="mr-1.5" size={14} />
                     On
                   </Button>
                 )}
               </div>
             ) : (thesis.status === 'completed' || thesis.status === 'exported') ? (
               <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={() => setShowPreview(true)}
-                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md"
-                >
-                  <Eye className="mr-1.5 w-3.5 h-3.5" />
-                  📄 Preview Full Thesis
-                </Button>
+                {(isPremium || hasExportUnlock) && (
+                  <Button 
+                    size="sm" 
+                    onClick={() => setShowPreview(true)}
+                    className="bg-slate-900 hover:bg-slate-800 text-white shadow-md"
+                  >
+                    <Eye className="mr-1.5" size={14} />
+                    Preview Full Thesis
+                  </Button>
+                )}
               </div>
             ) : null}
 
@@ -764,9 +925,6 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
         <div className="mb-5">
           <ThesisExpiryTimer 
             expiresAt={thesis.expires_at}
-            onExpired={() => {
-              toast.error('This thesis has expired. Upgrade to Pro for unlimited access.');
-            }}
           />
         </div>
       )}
@@ -776,24 +934,24 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
         <>
           {/* Premium users or users with export unlock - show normal export */}
           {(isPremium || hasExportUnlock) ? (
-            <Card className="p-5 mb-5 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+            <Card className="p-5 mb-5 bg-slate-100 border-slate-300">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3 text-center sm:text-left">
-                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                    <Check className="w-6 h-6 text-green-600" />
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                    <Check size={24} className="text-slate-900" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-green-800">🎉 Your Thesis is Ready!</h3>
-                    <p className="text-sm text-green-600">Download your complete thesis in PDF or DOCX format</p>
+                    <h3 className="text-lg font-semibold text-slate-900">🎉 Your Thesis is Ready!</h3>
+                    <p className="text-sm text-slate-600">Download your complete thesis in PDF or DOCX format</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Button 
                     size="lg"
                     onClick={() => setExportModalOpen(true)}
-                    className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/30 animate-[bounce_1s_ease-in-out_1]"
+                    className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg animate-[bounce_1s_ease-in-out_1]"
                   >
-                    <Download className="mr-2 w-5 h-5" />
+                    <DownloadSimple className="mr-2" size={20} />
                     Export Now
                   </Button>
                   <Button 
@@ -801,57 +959,73 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                     size="sm" 
                     onClick={deleteThesis} 
                     disabled={deleting} 
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                    className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                     title="Delete thesis"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash size={16} />
                   </Button>
                 </div>
               </div>
             </Card>
           ) : (
-            /* Free users - show locked export banner */
-            <Card className="p-5 mb-5 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+            /* Free users - show export banner (same positive tone as premium) */
+            <Card className="p-5 mb-5 bg-slate-100 border-slate-300">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3 text-center sm:text-left">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
-                    <Lock className="w-6 h-6 text-amber-600" />
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                    <Check size={24} className="text-slate-900" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-amber-800">🔒 Export Locked</h3>
-                    <p className="text-sm text-amber-600">Your thesis is ready! Unlock export to download.</p>
+                    <h3 className="text-lg font-semibold text-slate-900">🎉 Your Thesis is Ready!</h3>
+                    <p className="text-sm text-slate-600">{chapters.filter(c => c.status === 'completed').length} chapters • {chapters.reduce((s, c) => s + (c.word_count || 0), 0).toLocaleString()} words • Ready to download</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Button 
                     size="lg"
                     onClick={() => setExportPaywallOpen(true)}
-                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/30"
+                    className="bg-slate-900 hover:bg-slate-800 text-white shadow-lg"
                   >
-                    <Sparkles className="mr-2 w-5 h-5" />
-                    Unlock Export
+                    <DownloadSimple className="mr-2" size={20} />
+                    Download Thesis
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={deleteThesis} 
                     disabled={deleting} 
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                    className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                     title="Delete thesis"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash size={16} />
                   </Button>
                 </div>
               </div>
               {/* Trust indicator */}
-              <div className="mt-3 pt-3 border-t border-amber-200 flex items-center justify-center gap-4 text-xs text-amber-700">
+              <div className="mt-3 pt-3 border-t border-slate-200 flex items-center justify-center gap-4 text-xs text-slate-600">
                 <span className="flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5" />
-                  One-time: $4.99
+                  <ShieldCheck size={14} />
+                  One-time: $4
                 </span>
                 <span>•</span>
-                <span>Or Pro: $9.99/mo unlimited</span>
+                <span>Or Pro from $9/mo</span>
               </div>
+
+              {/* Blurred Content Preview */}
+              {(() => {
+                const firstCompleted = chapters.find(c => c.status === 'completed');
+                if (!firstCompleted) return null;
+                const preview = parseChapterContent(firstCompleted.content as string | null);
+                if (!preview.text) return null;
+                return (
+                  <div className="mt-4 relative rounded-xl overflow-hidden">
+                    <div className="p-4 bg-white text-xs text-slate-600 leading-relaxed whitespace-pre-wrap select-none blur-[6px]">
+                      {preview.text.slice(0, 800)}
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
+                  </div>
+                );
+              })()}
             </Card>
           )}
         </>
@@ -859,98 +1033,209 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
 
       {/* Progress */}
       {thesis.status !== 'draft' && (
-        <Card className="p-4 mb-5">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                {thesis.status === 'generating' ? 'Generating Your Thesis...' : 'Generation Progress'}
-              </h3>
-              <p className="text-xs text-slate-500">
-                {thesis.status === 'generating' ? (
-                  <>
-                    {completedChapters === 0 ? (
-                      'Starting generation, please wait...'
-                    ) : (
-                      `${completedChapters} of ${totalChapters - lockedChapters} chapters completed`
-                    )}
-                  </>
-                ) : (
-                  `${completedChapters} of ${totalChapters} chapters completed`
-                )}
-              </p>
-            </div>
-            <span className="text-xl font-bold text-blue-600">{overallProgress}%</span>
-          </div>
-          <Progress value={overallProgress} className="h-1.5" />
-          
-          {/* Current generating chapter indicator */}
-          {thesis.status === 'generating' && (
-            <div className="mt-3 pt-3 border-t border-slate-100">
-              {(() => {
-                const generatingChapter = chapters.find(c => c.status === 'generating');
-                if (generatingChapter) {
-                  const genContent = parseChapterContent(generatingChapter.content as string | null);
-                  return (
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 text-xs text-blue-600">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        <span>Generating: <strong>Chapter {generatingChapter.chapter_number}: {generatingChapter.title}</strong></span>
-                      </div>
-                      {genContent.currentOutlineIndex !== undefined && genContent.subchapters && (
-                        <div className="ml-4 text-[10px] text-slate-500">
-                          Writing section {generatingChapter.chapter_number}.{genContent.currentOutlineIndex + 1}: {
-                            getOutlineTitle(genContent.subchapters, genContent.currentOutlineIndex)
-                          }
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-                return (
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    <span>Preparing chapters...</span>
+        <Card className={`mb-5 overflow-hidden ${thesis.status === 'generating' ? 'p-0' : 'p-4'}`}>
+          {thesis.status === 'generating' ? (
+            /* ── Immersive Generation Experience ── */
+            <div className="min-h-[340px]">
+              {/* Top section — ring + title */}
+              <div className="flex flex-col items-center pt-8 pb-5 px-4 bg-gradient-to-b from-white/[0.03] to-transparent">
+                <ProgressRing progress={shownProgress} />
+                <h3 className="text-base font-semibold text-slate-900 mt-5">
+                  Generating Your Thesis
+                </h3>
+                <p className="text-xs text-slate-600 mt-1">
+                  {completedChapters === 0
+                    ? 'Starting generation — usually takes 5–10 minutes'
+                    : `${completedChapters} of ${totalChapters - lockedChapters} chapters completed`}
+                </p>
+              </div>
+
+              {/* Live word counter */}
+              {chapters.some(c => c.word_count > 0) && (
+                <div className="flex justify-center gap-6 pb-4 px-4">
+                  <div className="text-center">
+                    <span className="text-lg font-bold text-slate-900 tabular-nums">
+                      {chapters.reduce((s, c) => s + (c.word_count || 0), 0).toLocaleString()}
+                    </span>
+                    <p className="text-[10px] text-slate-600 mt-0.5">words written</p>
                   </div>
-                );
-              })()}
+                  <div className="text-center">
+                    <span className="text-lg font-bold text-slate-900 tabular-nums">
+                      {completedChapters}/{totalChapters - lockedChapters}
+                    </span>
+                    <p className="text-[10px] text-slate-600 mt-0.5">chapters done</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Chapter timeline */}
+              <div className="px-4 pb-4">
+                <div className="space-y-1">
+                  {chapters.filter(c => c.status !== 'locked').map((ch) => {
+                    const isCompleted = ch.status === 'completed';
+                    const isGenerating = ch.status === 'generating';
+                    const chContent = (isGenerating || isCompleted) ? parseChapterContent(ch.content as string | null) : null;
+                    const hasSections = chContent?.subchapters && chContent.subchapters.length > 0;
+                    
+                    return (
+                      <div key={ch.id} className={`rounded-lg transition-colors ${
+                        isGenerating ? 'bg-white' : ''
+                      }`}>
+                        {/* Chapter header */}
+                        <div className="flex items-center gap-2.5 px-3 py-2">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isCompleted ? 'bg-slate-100' : isGenerating ? 'bg-slate-100' : 'bg-white'
+                          }`}>
+                            {isCompleted ? (
+                              <Check size={10} className="text-slate-900" />
+                            ) : isGenerating ? (
+                              <SpinnerGap size={10} className="text-slate-900 animate-spin" />
+                            ) : (
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-xs truncate ${
+                              isCompleted ? 'text-slate-600' : isGenerating ? 'text-slate-900 font-medium' : 'text-slate-600'
+                            }`}>
+                              Ch. {ch.chapter_number}: {ch.title}
+                            </p>
+                          </div>
+                          {isCompleted && ch.word_count > 0 && (
+                            <span className="text-[10px] text-slate-600 tabular-nums flex-shrink-0">
+                              {ch.word_count.toLocaleString()}w
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Section-level progress for generating chapter */}
+                        {isGenerating && hasSections && (
+                          <div className="px-3 pb-2 ml-7 space-y-0.5">
+                            {chContent!.subchapters!.map((sub, idx) => {
+                              const currentIdx = chContent!.currentOutlineIndex ?? 0;
+                              const sectionDone = idx < currentIdx;
+                              const sectionActive = idx === currentIdx;
+                              return (
+                                <div key={idx} className={`flex items-center gap-1.5 py-0.5 px-1.5 rounded text-[10px] ${
+                                  sectionActive ? 'bg-slate-100' : ''
+                                }`}>
+                                  {sectionDone ? (
+                                    <Check size={9} className="text-emerald-400 flex-shrink-0" />
+                                  ) : sectionActive ? (
+                                    <SpinnerGap size={9} className="text-slate-900 animate-spin flex-shrink-0" />
+                                  ) : (
+                                    <Clock size={9} className="text-slate-600 flex-shrink-0" />
+                                  )}
+                                  <span className={`truncate ${
+                                    sectionDone ? 'text-slate-600' :
+                                    sectionActive ? 'text-slate-900 font-medium' :
+                                    'text-slate-600'
+                                  }`}>
+                                    {ch.chapter_number}.{idx + 1} {typeof sub === 'string' ? sub : (sub as { title?: string })?.title || 'Section'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Section titles for completed chapter */}
+                        {isCompleted && hasSections && (
+                          <div className="px-3 pb-2 ml-7 space-y-0.5">
+                            {chContent!.subchapters!.map((sub, idx) => (
+                              <div key={idx} className="flex items-center gap-1.5 py-0.5 px-1.5 text-[10px]">
+                                <Check size={9} className="text-emerald-400 flex-shrink-0" />
+                                <span className="truncate text-slate-600">
+                                  {ch.chapter_number}.{idx + 1} {typeof sub === 'string' ? sub : (sub as { title?: string })?.title || 'Section'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Footer — social proof + stay notification */}
+              <div className="px-4 pb-4 pt-2 border-t border-slate-100 space-y-2">
+                <SocialProofTicker />
+                <div className="flex items-center gap-1.5 text-[10px] text-amber-400/80">
+                  <Bell size={10} />
+                  <span>Please stay on this page while your thesis is being generated. You&apos;ll be notified by email when complete.</span>
+                </div>
+              </div>
             </div>
+          ) : (
+            /* ── Completed / static progress bar ── */
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    {overallProgress === 100 ? 'Completed' : 'Generation Progress'}
+                  </h3>
+                  <p className="text-xs text-slate-600">
+                    {completedChapters} of {totalChapters} chapters • {chapters.reduce((s, c) => s + (c.word_count || 0), 0).toLocaleString()} words
+                  </p>
+                </div>
+                {overallProgress === 100 
+                  ? <Check size={24} className="text-emerald-400" />
+                  : <span className="text-xl font-bold text-slate-900">{overallProgress}%</span>
+                }
+              </div>
+              <Progress value={overallProgress} className="h-1.5" />
+            </>
           )}
         </Card>
       )}
 
-      {/* Chapters */}
-      <div className="mb-5">
+      {/* Thesis Complete Banner */}
+      {thesis.status === 'completed' && completedChapters > 0 && completedChapters >= (totalChapters - lockedChapters) && (
+        <Card className="mb-5 p-5 bg-gradient-to-r from-slate-50 to-white border-slate-200">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                <Check size={20} className="text-slate-900" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Your thesis is ready!</h3>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  {completedChapters} chapters • {chapters.reduce((sum, c) => sum + (c.word_count || 0), 0).toLocaleString()} words generated
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {(isPremium || hasExportUnlock) ? (
+                <Button size="sm" onClick={() => setExportModalOpen(true)}>
+                  <DownloadSimple className="mr-1.5" size={14} />
+                  Export Thesis
+                </Button>
+              ) : (
+                <Button size="sm" onClick={() => setExportPaywallOpen(true)}>
+                  <DownloadSimple className="mr-1.5" size={14} />
+                  Download
+                </Button>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Chapters — hide during generation since progress card already shows them */}
+      {thesis.status !== 'generating' && <div className="mb-5">
         <h2 className="text-sm font-semibold text-slate-900 mb-3">Chapters</h2>
         
-        {chapters.length === 0 && thesis.status === 'generating' ? (
-          // Show skeleton loading while chapters are being created
-          <div className="space-y-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Card key={i} className="p-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-200 animate-pulse" />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-3 bg-slate-200 rounded animate-pulse w-3/4" />
-                    <div className="h-2 bg-slate-100 rounded animate-pulse w-1/2" />
-                  </div>
-                </div>
-              </Card>
-            ))}
-            <p className="text-center text-xs text-slate-500 mt-3">
-              <Loader2 className="w-3 h-3 animate-spin inline mr-1.5" />
-              Creating chapter structure...
-            </p>
-          </div>
-        ) : chapters.length === 0 ? (
+        {chapters.length === 0 ? (
           <Card className="p-6 text-center">
-            <BookOpen className="w-10 h-10 mx-auto text-slate-300 mb-3" />
+            <BookOpen size={40} className="mx-auto text-slate-600 mb-3" />
             <h3 className="text-sm font-semibold text-slate-900 mb-1">No chapters yet</h3>
-            <p className="text-xs text-slate-500 mb-3">
+            <p className="text-xs text-slate-600 mb-3">
               Start generating to create your thesis chapters
             </p>
             {thesis.status === 'draft' && (
               <Button size="sm" onClick={startGeneration} disabled={generating}>
-                <Play className="mr-1.5 w-3.5 h-3.5" />
+                <Play className="mr-1.5" size={14} />
                 Start Generation
               </Button>
             )}
@@ -965,23 +1250,32 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
               return (
                 <Card 
                   key={chapter.id} 
-                  className={`overflow-hidden ${chapter.status === 'locked' ? 'opacity-75 bg-slate-50' : ''}`}
+                  className={`overflow-hidden ${chapter.status === 'locked' ? 'opacity-75 bg-white' : ''}`}
                 >
                   <div 
-                    className={`p-3 flex items-center gap-3 ${chapter.status === 'completed' ? 'cursor-pointer hover:bg-slate-50' : ''}`}
+                    className={`p-3 flex items-center gap-3 ${
+                      chapter.status === 'completed' || chapter.status === 'editing' ? 'cursor-pointer hover:bg-slate-50' :
+                      chapter.status === 'locked' ? 'cursor-pointer hover:bg-slate-50' :
+                      chapter.status === 'generating' || chapter.status === 'pending' ? 'cursor-not-allowed' : ''
+                    }`}
                     onClick={() => {
-                      if (chapter.status === 'completed') {
+                      if (chapter.status === 'completed' || chapter.status === 'editing') {
                         router.push(`/app/thesis/${thesis.id}/chapter/${chapter.id}`);
+                      } else if (chapter.status === 'generating' || chapter.status === 'pending') {
+                        toast.info('This chapter is still generating. Please wait until it\'s complete.');
+                      } else if (chapter.status === 'locked') {
+                        trackClarityEvent('locked_chapter_card_click');
+                        setExportPaywallOpen(true);
                       } else if (hasSubchapters && chapter.status !== 'locked') {
                         toggleChapterExpanded(chapter.id);
                       }
                     }}
                   >
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      chapter.status === 'completed' ? 'bg-green-100' :
-                      chapter.status === 'generating' ? 'bg-blue-100' :
-                      chapter.status === 'editing' ? 'bg-orange-100' :
-                      chapter.status === 'locked' ? 'bg-slate-200' :
+                      chapter.status === 'completed' ? 'bg-slate-100' :
+                      chapter.status === 'generating' ? 'bg-slate-100' :
+                      chapter.status === 'editing' ? 'bg-orange-500/20' :
+                      chapter.status === 'locked' ? 'bg-slate-100' :
                       'bg-slate-100'
                     }`}>
                       {chapterStatusIcon(chapter.status)}
@@ -992,9 +1286,9 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                         Chapter {chapter.chapter_number}: {chapter.title}
                       </h3>
                       {chapter.status === 'locked' ? (
-                        <p className="text-xs text-slate-500">Upgrade to unlock</p>
+                        <p className="text-xs text-slate-600">Unlock to access this chapter</p>
                       ) : chapter.status === 'generating' ? (
-                        <p className="text-xs text-blue-600">
+                        <p className="text-xs text-slate-900">
                           {chapterContent.currentOutlineIndex !== undefined && chapterContent.totalOutlines ? (
                             <>Outline {chapterContent.currentOutlineIndex + 1} of {chapterContent.totalOutlines}...</>
                           ) : (
@@ -1002,9 +1296,16 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                           )}
                         </p>
                       ) : chapter.word_count > 0 ? (
-                        <p className="text-xs text-slate-500">{chapter.word_count.toLocaleString()} words</p>
+                        <>
+                          <p className="text-xs text-slate-600">{chapter.word_count.toLocaleString()} words</p>
+                          {chapterContent.text && (
+                            <p className="text-xs text-slate-600 truncate mt-0.5 max-w-md">
+                              {chapterContent.text.split(/\s+/).slice(0, 15).join(' ')}…
+                            </p>
+                          )}
+                        </>
                       ) : hasSubchapters ? (
-                        <p className="text-xs text-slate-500">{chapterContent.subchapters?.length} outlines</p>
+                        <p className="text-xs text-slate-600">{chapterContent.subchapters?.length} outlines</p>
                       ) : null}
                     </div>
 
@@ -1013,27 +1314,25 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                         onClick={(e) => { e.stopPropagation(); toggleChapterExpanded(chapter.id); }}
                         className="p-1 hover:bg-slate-100 rounded"
                       >
-                        {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                        {isExpanded ? <CaretDown size={16} className="text-slate-600" /> : <CaretRight size={16} className="text-slate-600" />}
                       </button>
                     )}
 
                     {chapter.status === 'completed' && (
-                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                      <CaretRight size={16} className="text-slate-600" />
                     )}
                     
                     {chapter.status === 'locked' && (
-                      <Link href="/app/upgrade" onClick={(e) => e.stopPropagation()}>
-                        <Button size="sm" className="gap-1 h-7 text-xs">
-                          <Sparkles className="w-2.5 h-2.5" />
-                          Unlock
-                        </Button>
-                      </Link>
+                      <Button size="sm" className="gap-1 h-7 text-xs" onClick={(e) => { e.stopPropagation(); trackClarityEvent('locked_chapter_unlock_click'); setExportPaywallOpen(true); }}>
+                        <Sparkle size={10} />
+                        Unlock
+                      </Button>
                     )}
                   </div>
 
                   {/* Subchapters list - always show when generating, otherwise only when expanded */}
                   {((isExpanded || chapter.status === 'generating') && hasSubchapters && chapter.status !== 'locked') && (
-                    <div className="px-3 pb-3 border-t border-slate-100 bg-slate-50/50">
+                    <div className="px-3 pb-3 border-t border-slate-200 bg-white">
                       <div className="pt-2 space-y-1">
                         {chapterContent.subchapters?.map((sub, idx) => {
                           // Default to 0 if currentOutlineIndex is undefined but chapter is generating
@@ -1046,32 +1345,32 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                             <div 
                               key={idx} 
                               className={`flex items-center gap-2 text-xs py-0.5 px-1.5 rounded ${
-                                isCurrentlyGenerating ? 'bg-blue-50 border border-blue-200' : ''
+                                isCurrentlyGenerating ? 'bg-slate-100 border border-slate-300' : ''
                               }`}
                             >
                               <span className={`w-6 font-mono text-[10px] ${
-                                isCurrentlyGenerating ? 'text-blue-600 font-medium' :
-                                isCompleted ? 'text-green-600' :
-                                'text-slate-400'
+                                isCurrentlyGenerating ? 'text-slate-900 font-medium' :
+                                isCompleted ? 'text-slate-900' :
+                                'text-slate-600'
                               }`}>
                                 {chapter.chapter_number}.{idx + 1}
                               </span>
                               <span className={`flex-1 ${
-                                isCurrentlyGenerating ? 'text-blue-700 font-medium' :
-                                isCompleted ? 'text-slate-700' :
-                                isPending ? 'text-slate-400' :
+                                isCurrentlyGenerating ? 'text-slate-900 font-medium' :
+                                isCompleted ? 'text-slate-600' :
+                                isPending ? 'text-slate-600' :
                                 'text-slate-600'
                               }`}>
                                 {typeof sub === 'string' ? sub : (sub as { title?: string })?.title || 'Section'}
                               </span>
                               {isCurrentlyGenerating && (
-                                <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+                                <SpinnerGap size={12} className="text-slate-900 animate-spin" />
                               )}
                               {isCompleted && (
-                                <Check className="w-3 h-3 text-green-500" />
+                                <Check size={12} className="text-slate-900" />
                               )}
                               {isPending && (
-                                <Clock className="w-3 h-3 text-slate-300" />
+                                <Clock size={12} className="text-slate-600" />
                               )}
                             </div>
                           );
@@ -1089,13 +1388,30 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                         } 
                         className="h-1 mt-2" 
                       />
-                      <p className="text-[10px] text-slate-500 mt-1">
+                      <p className="text-[10px] text-slate-600 mt-1">
                         {chapterContent.currentOutlineIndex !== undefined && chapterContent.totalOutlines ? (
                           <>Writing: <strong>{chapter.chapter_number}.{chapterContent.currentOutlineIndex + 1}</strong> {getOutlineTitle(chapterContent.subchapters, chapterContent.currentOutlineIndex)}</>
                         ) : (
                           <>Starting generation...</>
                         )}
                       </p>
+
+                      {/* Live Text Preview */}
+                      {chapterContent.text && (
+                        <div className="mt-3 pt-3 border-t border-slate-200">
+                          <p className="text-[10px] uppercase tracking-wider text-slate-600 mb-2 flex items-center gap-1.5">
+                            <Eye size={10} />
+                            Live Preview
+                          </p>
+                          <div className="relative max-h-40 overflow-hidden rounded-lg bg-white p-3">
+                            <div className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap animate-fade-in">
+                              {chapterContent.text.slice(-600)}
+                              <span className="inline-block w-0.5 h-3.5 bg-slate-900 ml-0.5 animate-pulse" />
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </Card>
@@ -1104,28 +1420,26 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
             
             {/* Show upgrade banner if there are locked chapters */}
             {lockedChapters > 0 && (
-              <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+              <Card className="p-4 bg-white border-slate-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-900 mb-0.5">
                       {lockedChapters} chapters locked
                     </h3>
                     <p className="text-xs text-slate-600">
-                      Upgrade to Pro to generate all chapters
+                      Unlock all chapters and download your complete thesis
                     </p>
                   </div>
-                  <Link href="/app/upgrade">
-                    <Button size="sm">
-                      <Sparkles className="mr-1.5 w-3.5 h-3.5" />
-                      Upgrade
-                    </Button>
-                  </Link>
+                  <Button size="sm" onClick={() => { trackClarityEvent('locked_banner_unlock_click'); setExportPaywallOpen(true); }}>
+                    <Sparkle className="mr-1.5" size={14} />
+                    Unlock
+                  </Button>
                 </div>
               </Card>
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Topic */}
       {thesis.topic && (
@@ -1139,21 +1453,21 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
       <Modal isOpen={exportModalOpen} onClose={() => setExportModalOpen(false)}>
         <ModalHeader>
           <h2 className="text-lg font-semibold text-slate-900">Export Thesis</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Choose your preferred format</p>
+          <p className="text-xs text-slate-600 mt-0.5">Choose your preferred format</p>
         </ModalHeader>
 
         {exporting ? (
           <div className="flex flex-col items-center py-6">
-            <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-3" />
+            <SpinnerGap size={40} className="text-slate-900 animate-spin mb-3" />
             <p className="text-sm font-medium text-slate-900 mb-1">
               Generating {exporting.toUpperCase()}...
             </p>
-            <p className="text-xs text-slate-500 mb-4">
+            <p className="text-xs text-slate-600 mb-4">
               This may take up to 30 seconds
             </p>
             <button
               onClick={() => setExportModalOpen(false)}
-              className="text-xs text-slate-500 hover:text-slate-700 underline"
+              className="text-xs text-slate-600 hover:text-slate-600 underline"
             >
               Close and wait in background
             </button>
@@ -1161,20 +1475,20 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
         ) : (
           <div className="space-y-2">
             {/* PDF Download Options */}
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide px-1 pt-1">PDF Options</p>
+            <p className="text-xs font-medium text-slate-600 uppercase tracking-wide px-1 pt-1">PDF Options</p>
             
             <button
               onClick={() => exportThesis('pdf')}
-              className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all group"
+              className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all group"
             >
-              <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center">
-                <Download className="w-4 h-4 text-red-600" />
+              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
+                <DownloadSimple size={16} className="text-slate-900" />
               </div>
               <div className="text-left flex-1">
-                <h3 className="text-sm font-medium text-slate-900 group-hover:text-blue-600">Download PDF</h3>
-                <p className="text-xs text-slate-500">Quick download with auto-generated footnotes</p>
+                <h3 className="text-sm font-medium text-slate-900 group-hover:text-slate-900">Download PDF</h3>
+                <p className="text-xs text-slate-600">Quick download with auto-generated footnotes</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+              <CaretRight size={16} className="text-slate-600 group-hover:text-slate-900" />
             </button>
 
             <button
@@ -1182,47 +1496,47 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                 setExportModalOpen(false);
                 setShowPDFEditor(true);
               }}
-              className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-purple-300 hover:bg-purple-50 transition-all group"
+              className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all group"
             >
-              <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center">
-                <Edit className="w-4 h-4 text-purple-600" />
+              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
+                <PencilSimple size={16} className="text-slate-900" />
               </div>
               <div className="text-left flex-1">
-                <h3 className="text-sm font-medium text-slate-900 group-hover:text-purple-600">Edit & Download PDF</h3>
-                <p className="text-xs text-slate-500">Preview and edit content before downloading</p>
+                <h3 className="text-sm font-medium text-slate-900 group-hover:text-slate-900">Edit & Download PDF</h3>
+                <p className="text-xs text-slate-600">Preview and edit content before downloading</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-600" />
+              <CaretRight size={16} className="text-slate-600 group-hover:text-slate-900" />
             </button>
 
             {/* Other Formats */}
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide px-1 pt-3">Other Formats</p>
+            <p className="text-xs font-medium text-slate-600 uppercase tracking-wide px-1 pt-3">Other Formats</p>
 
             <button
               onClick={() => exportThesis('docx')}
-              className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all group"
+              className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all group"
             >
-              <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
-                <FileText className="w-4 h-4 text-blue-600" />
+              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
+                <FileText size={16} className="text-slate-900" />
               </div>
               <div className="text-left flex-1">
-                <h3 className="text-sm font-medium text-slate-900 group-hover:text-blue-600">Word (DOCX)</h3>
-                <p className="text-xs text-slate-500">Full thesis with title page, TOC, chapters</p>
+                <h3 className="text-sm font-medium text-slate-900 group-hover:text-slate-900">Word (DOCX)</h3>
+                <p className="text-xs text-slate-600">Full thesis with title page, TOC, chapters</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+              <CaretRight size={16} className="text-slate-600 group-hover:text-slate-900" />
             </button>
 
             <button
               onClick={() => exportThesis('latex')}
-              className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all group"
+              className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all group"
             >
-              <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center">
-                <FileText className="w-4 h-4 text-green-600" />
+              <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
+                <FileText size={16} className="text-slate-900" />
               </div>
               <div className="text-left flex-1">
-                <h3 className="text-sm font-medium text-slate-900 group-hover:text-blue-600">LaTeX</h3>
-                <p className="text-xs text-slate-500">Professional typesetting with full structure</p>
+                <h3 className="text-sm font-medium text-slate-900 group-hover:text-slate-900">LaTeX</h3>
+                <p className="text-xs text-slate-600">Professional typesetting with full structure</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
+              <CaretRight size={16} className="text-slate-600 group-hover:text-slate-900" />
             </button>
           </div>
         )}
@@ -1279,7 +1593,7 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
           <div className="min-h-screen py-8 px-4">
             {/* Close button */}
             <div className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
-              <h2 className="text-white font-semibold">Full Thesis Preview</h2>
+              <h2 className="text-slate-900 font-semibold">Full Thesis Preview</h2>
               <div className="flex gap-3">
                 {(isPremium || hasExportUnlock) ? (
                   <Button 
@@ -1287,9 +1601,9 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                       setShowPreview(false);
                       setExportModalOpen(true);
                     }}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-slate-100 hover:bg-slate-200"
                   >
-                    <Download className="mr-2 w-4 h-4" />
+                    <DownloadSimple className="mr-2" size={16} />
                     Export
                   </Button>
                 ) : (
@@ -1298,9 +1612,9 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                       setShowPreview(false);
                       setExportPaywallOpen(true);
                     }}
-                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                    className="bg-slate-100 hover:bg-slate-200"
                   >
-                    <Lock className="mr-2 w-4 h-4" />
+                    <Lock className="mr-2" size={16} />
                     Unlock Export
                   </Button>
                 )}
@@ -1308,7 +1622,7 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                   variant="secondary"
                   onClick={() => setShowPreview(false)}
                 >
-                  <X className="mr-2 w-4 h-4" />
+                  <X className="mr-2" size={16} />
                   Close
                 </Button>
               </div>
@@ -1344,9 +1658,9 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                     setShowPreview(false);
                     setExportModalOpen(true);
                   }}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-slate-100 hover:bg-slate-200"
                 >
-                  <Download className="mr-2 w-4 h-4" />
+                  <DownloadSimple className="mr-2" size={16} />
                   Export Now
                 </Button>
               ) : (
@@ -1355,10 +1669,10 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
                     setShowPreview(false);
                     setExportPaywallOpen(true);
                   }}
-                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                  className="bg-slate-100 hover:bg-slate-200"
                 >
-                  <Sparkles className="mr-2 w-4 h-4" />
-                  Unlock Export ($4.99)
+                  <Sparkle className="mr-2" size={16} />
+                  Unlock Export ($4)
                 </Button>
               )}
             </div>
@@ -1369,10 +1683,23 @@ export default function ThesisPage({ params }: { params: Promise<{ id: string }>
       {/* Export Paywall for Free Users */}
       <ExportPaywall
         isOpen={exportPaywallOpen}
-        onClose={() => setExportPaywallOpen(false)}
+        onClose={() => {
+          setExportPaywallOpen(false);
+          // Show referral downsell on first close only
+          if (!paywallClosedOnce) {
+            setPaywallClosedOnce(true);
+            setTimeout(() => setReferralDownsellOpen(true), 300);
+          }
+        }}
         thesisTitle={thesis?.title || ''}
         thesisId={resolvedParams.id}
         expiresAt={thesis?.expires_at ? new Date(thesis.expires_at) : null}
+      />
+
+      {/* Referral Downsell */}
+      <ReferralDownsell
+        isOpen={referralDownsellOpen}
+        onClose={() => setReferralDownsellOpen(false)}
       />
 
       {/* Copy Protection CSS for Free Users */}

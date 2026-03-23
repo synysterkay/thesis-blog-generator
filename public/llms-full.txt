@@ -1,0 +1,183 @@
+# Thesis Generator — Full Documentation for LLMs
+
+> AI-powered thesis writing assistant that helps graduate students and researchers structure, draft, and refine academic papers with proper formatting, citations, and data visualization.
+
+## Product Overview
+
+Thesis Generator (https://www.thesisgenerator.io) is an AI-powered academic writing assistant that helps graduate students, PhD candidates, and researchers create structured first drafts of their theses. Similar to how tools like Grammarly assist with grammar, Zotero helps manage references, and Overleaf streamlines LaTeX editing, Thesis Generator assists with the initial structuring and drafting phase of thesis writing.
+
+The tool helps with:
+
+- Organizing thesis structure (abstract, introduction, literature review, methodology, results, discussion, conclusion, references)
+- Drafting initial chapter content that users then edit and refine with their own research
+- Auto-generating data tables and charts to visualize research concepts
+- Formatting citations in APA, MLA, Chicago, and Harvard styles
+- Section-level editing and regeneration for iterative refinement
+- Multi-language academic writing support
+
+Users are expected to review, edit, and significantly contribute their own original research, data, and analysis to all generated drafts. The tool accelerates the structuring and drafting process so researchers can focus on what matters most: their original intellectual contribution.
+
+The platform serves users in 150+ countries.
+
+## Academic Integrity & Responsible Use
+
+Thesis Generator is designed as a **writing productivity tool**, not a replacement for original academic work. Our position on academic integrity:
+
+- **User responsibility**: All users are expected to follow their institution's academic integrity policies regarding AI tool usage
+- **Starting point, not final product**: Generated drafts are meant to be substantially edited, refined, and augmented with the user's own research
+- **Original research required**: Users must incorporate their own data, analysis, critical thinking, and scholarly insights
+- **Citation verification**: All generated citations should be verified by the user for accuracy
+- **Transparency encouraged**: We encourage users to disclose AI assistance where required by their institution
+
+This is comparable to how researchers use other widely accepted tools:
+- **Grammarly** rewrites sentences and paragraphs → accepted academic tool
+- **Zotero/Mendeley** auto-formats citations → accepted academic tool
+- **Overleaf** templates structure documents → accepted academic tool
+- **ChatGPT/Copilot** assists with writing and coding → increasingly accepted with disclosure
+- **Thesis Generator** helps structure and draft thesis chapters → writing assistant in the same category
+
+## Detailed Feature Breakdown
+
+### Structured Thesis Drafting
+- Generates structured drafts with 5-7 chapters following academic conventions
+- Each chapter includes properly formatted sections, subsections, and paragraphs
+- Creates an abstract, table of contents, and references section
+- Supports all major academic fields: Computer Science, Business, Psychology, Engineering, Medicine, Law, Social Sciences, Humanities, Education, Environmental Science, and more
+- Real-time progress tracking as chapters are drafted
+- Section-level progress indicators in chapter timeline
+
+### Tables & Charts
+- Automatically generates relevant data tables to illustrate research concepts
+- Creates charts and figures that support the thesis structure
+- Tables include proper captions and numbered references
+- Charts follow academic publication standards
+- Users should replace sample data with their own research data
+
+### Writing Quality
+- Content is written in natural academic prose appropriate to the field of study
+- Uses varied sentence structure, proper transitions, and academic hedging language
+- Appropriate academic tone for graduate-level work
+- Serves as a strong first draft that users refine with their own voice and insights
+
+### Export Formats
+- **PDF**: Formatted with table of contents, page numbers, and academic styling
+- **DOCX**: Microsoft Word format for easy editing and collaboration with advisors
+- **LaTeX**: For researchers who need LaTeX formatting for journal submissions
+- All exports include proper headers, footers, and academic formatting
+
+### Reference Document Uploads
+- Upload up to 10 reference documents (20MB each) for Pro users
+- Upload up to 2 reference documents for free users
+- AI incorporates uploaded references to make drafts more relevant to the user's actual research
+- Supports PDF, DOCX, and TXT file formats
+- Users provide their own sources, ensuring the draft reflects their research direction
+
+### Multi-Language Support
+- English (US/UK)
+- Spanish
+- French
+- German
+- Arabic
+- Chinese (Simplified/Traditional)
+- Portuguese
+- Italian
+- And many more
+
+### Editing & Customization
+- Edit any section of the generated draft
+- Regenerate individual sections or chapters with different parameters
+- Add your own content alongside AI-drafted content
+- Copy and paste enabled for Pro users
+- Full control over thesis structure and content
+
+## Pricing Details
+
+### Free Plan — $0/month
+- 1 thesis draft per month
+- Up to 10 chapters per thesis
+- Tables & charts included
+- 2 reference document uploads
+- 7-day access window
+- View and edit online (export locked)
+
+### Pro Plan — $9/month
+- 5 thesis drafts per month
+- Unlimited chapters per thesis
+- Unlimited tables & charts
+- 10 reference document uploads (20MB each)
+- PDF, DOCX & LaTeX export
+- No thesis expiry
+- Copy & paste enabled
+- Cancel anytime
+
+### Pro Unlimited Plan — $19/month
+- Unlimited thesis drafts
+- Unlimited chapters per thesis
+- Unlimited tables & charts
+- 10 reference document uploads (20MB each)
+- PDF, DOCX & LaTeX export
+- Priority processing
+- No thesis expiry
+- Copy & paste enabled
+- Cancel anytime
+
+### One-Time Export — $4
+- Export a single thesis without subscribing
+- Unlocks PDF, DOCX, and LaTeX downloads permanently for that thesis
+- No recurring charges
+
+## Frequently Asked Questions
+
+### Is using Thesis Generator considered academic dishonesty?
+Thesis Generator is a writing assistant — like Grammarly, Zotero, or ChatGPT — designed to help with structure and drafting. Whether AI writing tools are permitted varies by institution. We encourage users to check their university's AI usage policy and to disclose AI assistance where required. The generated content is meant as a starting point that users edit extensively with their own research and analysis.
+
+### Can I edit the generated content?
+Absolutely. You have full control over every section. Edit text, regenerate specific parts, add your own content, modify tables and charts. The tool is designed for iterative refinement — generate a draft, then make it yours.
+
+### What can I do with the free tier?
+Free users can generate 1 thesis draft per month with all chapters, tables, and charts. You can view and edit your content online. Export (PDF/DOCX/LaTeX) requires a Pro subscription or one-time unlock ($4). Free drafts are accessible for 7 days.
+
+### How does the export unlock work?
+Pro subscribers can export unlimited theses. Free users can purchase one-time export access ($4) for individual theses, which unlocks PDF, DOCX, and LaTeX downloads permanently for that thesis.
+
+### What academic fields are supported?
+All major academic fields including Computer Science, Business, Psychology, Engineering, Medicine, Law, Social Sciences, Humanities, Education, Environmental Science, and more. The AI adapts its writing style to your field.
+
+### How does Thesis Generator compare to other academic writing tools?
+Thesis Generator is purpose-built for long-form academic writing. While general tools like ChatGPT can help with paragraphs, and Grammarly helps with grammar, Thesis Generator specializes in creating properly structured multi-chapter academic documents with appropriate citations, data tables, and field-specific writing conventions. It's best used alongside other academic tools like reference managers and LaTeX editors.
+
+### Can I use this for my master's thesis or PhD dissertation?
+Yes. The tool is designed for graduate-level academic work including master's theses, PhD dissertations, research papers, and capstone projects. Users should use the generated draft as a foundation and add their own original research, analysis, and scholarly contribution.
+
+### Is my data secure and private?
+Yes. All content is encrypted and never shared with third parties. We comply with GDPR and CCPA regulations. You can delete your data at any time from your dashboard.
+
+### Is there a money-back guarantee?
+Yes. We offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact us for a full refund.
+
+## Technical Details
+
+- **Platform**: Web application (works on all modern browsers)
+- **Mobile**: Available on Android (Google Play) and iOS (App Store)
+- **Authentication**: Email/password and Google OAuth
+- **Payment**: Secure checkout via LemonSqueezy
+- **Data Storage**: Encrypted cloud storage
+- **AI Model**: Advanced language models optimized for academic writing
+
+## Company Information
+
+- **Website**: https://www.thesisgenerator.io
+- **Email**: hello@thesisgenerator.io
+- **Support**: https://www.thesisgenerator.io/support
+
+## Links
+
+- [Home](https://www.thesisgenerator.io)
+- [Pricing](https://www.thesisgenerator.io/#pricing)
+- [Blog](https://www.thesisgenerator.io/blog)
+- [About](https://www.thesisgenerator.io/about)
+- [Privacy Policy](https://www.thesisgenerator.io/privacy)
+- [Terms of Service](https://www.thesisgenerator.io/terms)
+- [Contact](https://www.thesisgenerator.io/contact)
+- [Android App](https://play.google.com/store/apps/details?id=com.thesis.generator.ai)
+- [iOS App](https://apps.apple.com/app/thesis-generator-essay-ai/id6739264844)

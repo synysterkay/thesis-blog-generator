@@ -23,11 +23,6 @@ export async function POST() {
       return NextResponse.json({ error: 'No active subscription found' }, { status: 404 });
     }
 
-    // Check if it's a lifetime subscription (can't be cancelled)
-    if (subscription.plan_type === 'lifetime' || subscription.lemonsqueezy_subscription_id.startsWith('lifetime-')) {
-      return NextResponse.json({ error: 'Lifetime subscriptions cannot be cancelled' }, { status: 400 });
-    }
-
     // Cancel subscription via LemonSqueezy API
     const response = await fetch(
       `https://api.lemonsqueezy.com/v1/subscriptions/${subscription.lemonsqueezy_subscription_id}`,

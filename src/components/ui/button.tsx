@@ -3,24 +3,24 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0",
+          "bg-slate-900 text-white shadow-lg shadow-slate-900/10 hover:shadow-xl hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0",
         gradient:
-          "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98]",
+          "bg-gradient-to-r from-slate-900 to-slate-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]",
         secondary:
-          "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm hover:shadow-md",
+          "bg-slate-100 border border-slate-200 text-slate-900 hover:bg-slate-200 shadow-sm",
         ghost:
           "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
         outline:
-          "border border-slate-200 bg-transparent text-slate-700 hover:bg-slate-50",
+          "border border-slate-300 bg-transparent text-slate-700 hover:bg-slate-50",
         destructive:
           "bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/25",
         link:
-          "text-blue-600 underline-offset-4 hover:underline",
+          "text-slate-900 underline-offset-4 hover:underline",
       },
       size: {
         default: "h-11 px-6 py-2",

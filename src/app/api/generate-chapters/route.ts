@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, field, targetLength } = await request.json();
+    const { title, description, field, targetLength, language = 'English' } = await request.json();
 
     if (!title || !field) {
       return NextResponse.json(
@@ -37,6 +37,7 @@ Thesis Title: ${title}
 ${description ? `Description: ${description}` : ''}
 Academic Field: ${field}
 Target Length: ${targetLength || 'medium'}
+Language: ${language}
 
 Generate exactly ${chapterCount} chapter titles that:
 1. Follow standard academic thesis structure for the ${field} field
@@ -44,8 +45,9 @@ Generate exactly ${chapterCount} chapter titles that:
 3. Flow logically from introduction to conclusion
 4. Include appropriate methodology and analysis chapters for the field
 5. Use professional academic language
+6. ALL chapter titles MUST be written in ${language}
 
-IMPORTANT: Return ONLY a JSON array of chapter titles, nothing else. Example format:
+IMPORTANT: Return ONLY a JSON array of chapter titles, nothing else. ALL titles must be in ${language}. Example format:
 ["Introduction", "Literature Review", "Methodology", "Data Analysis", "Results", "Discussion", "Conclusion"]
 
 Do not include chapter numbers, just the titles. The response must be valid JSON.`;
@@ -61,7 +63,7 @@ Do not include chapter numbers, just the titles. The response must be valid JSON
         messages: [
           {
             role: 'system',
-            content: 'You are an academic thesis structure expert. You only respond with valid JSON arrays.',
+            content: `You are an academic thesis structure expert. You only respond with valid JSON arrays.${language !== 'English' ? ` You MUST write all chapter titles in ${language}. Do NOT use English.` : ''}`,
           },
           {
             role: 'user',

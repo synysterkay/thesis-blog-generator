@@ -15,7 +15,7 @@ export interface PaymentMethod {
 export interface SubscriptionDetails {
   id: string;
   status: 'active' | 'cancelled' | 'expired' | 'past_due' | 'paused' | 'on_trial';
-  planType: 'free' | 'monthly' | 'yearly' | 'lifetime';
+  planType: 'free' | 'monthly' | 'unlimited';
   planName: string;
   price: number;
   currency: string;
@@ -75,20 +75,6 @@ export async function GET() {
       return NextResponse.json(freePlanResponse);
     }
 
-    // Handle lifetime subscriptions
-    if (subscription.plan_type === 'lifetime' || subscription.lemonsqueezy_subscription_id.startsWith('lifetime-')) {
-      return NextResponse.json({
-        ...freePlanResponse,
-        id: subscription.id,
-        planType: 'lifetime',
-        planName: 'Lifetime Access',
-        price: 199.99,
-        status: 'active',
-        currentPeriodStart: subscription.created_at,
-        currentPeriodEnd: null,
-      });
-    }
-
     // Fetch detailed subscription info from LemonSqueezy
     try {
       const response = await fetch(
@@ -109,18 +95,14 @@ export async function GET() {
       const attrs = data.data.attributes;
 
       // Determine plan type
-      let planType: 'monthly' | 'yearly' | 'lifetime' = 'monthly';
+      let planType: 'monthly' | 'unlimited' = 'monthly';
       let planName = 'Pro Monthly';
-      let price = 9.99;
+      let price = 9;
       
-      if (attrs.variant_id?.toString() === process.env.NEXT_PUBLIC_LEMONSQUEEZY_YEARLY_VARIANT_ID) {
-        planType = 'yearly';
-        planName = 'Pro Yearly';
-        price = 79.99;
-      } else if (attrs.variant_id?.toString() === process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID) {
-        planType = 'lifetime';
-        planName = 'Lifetime Access';
-        price = 199.99;
+      if (attrs.variant_id?.toString() === process.env.NEXT_PUBLIC_LEMONSQUEEZY_UNLIMITED_VARIANT_ID) {
+        planType = 'unlimited';
+        planName = 'Pro Unlimited';
+        price = 19;
       }
 
       // Get customer details for portal URL
@@ -178,7 +160,7 @@ export async function GET() {
         planName,
         price,
         currency: 'USD',
-        interval: planType === 'lifetime' ? null : planType === 'yearly' ? 'year' : 'month',
+        interval: 'month',
         currentPeriodStart: attrs.current_period_start,
         currentPeriodEnd: attrs.current_period_end,
         renewsAt: attrs.renews_at,
@@ -201,10 +183,10 @@ export async function GET() {
         ...freePlanResponse,
         id: subscription.id,
         status: subscription.status,
-        planType: subscription.plan_type as 'monthly' | 'yearly' | 'lifetime',
-        planName: subscription.plan_type === 'yearly' ? 'Pro Yearly' : 'Pro Monthly',
-        price: subscription.plan_type === 'yearly' ? 79.99 : 9.99,
-        interval: subscription.plan_type === 'yearly' ? 'year' : 'month',
+        planType: subscription.plan_type as 'monthly' | 'unlimited',
+        planName: subscription.plan_type === 'unlimited' ? 'Pro Unlimited' : 'Pro Monthly',
+        price: subscription.plan_type === 'unlimited' ? 19 : 9,
+        interval: 'month',
         currentPeriodEnd: subscription.current_period_end,
         cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
       });

@@ -65,8 +65,6 @@ export async function POST(request: Request) {
             },
           },
           product_options: {
-            name: `Export: ${thesis.title.substring(0, 50)}`,
-            description: 'One-time export access for this thesis (PDF, DOCX, LaTeX)',
             redirect_url: `${process.env.NEXT_PUBLIC_SITE_URL}/app/thesis/${thesisId}?export=unlocked`,
             receipt_button_text: 'Download Your Thesis',
             receipt_thank_you_note: 'Your thesis export is now unlocked! Click below to download.',
@@ -119,7 +117,7 @@ export async function POST(request: Request) {
       userId: user.id,
       contentId: 'export',
       contentName: 'Single Export Unlock',
-      value: 4.99,
+      value: 4,
       currency: 'USD',
     });
     

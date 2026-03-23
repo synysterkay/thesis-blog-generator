@@ -25,7 +25,7 @@ export async function getSubscriptionStatus(userId: string): Promise<Subscriptio
   }
   
   // Determine plan type from plan_type field
-  const planType = subscription.plan_type as 'monthly' | 'yearly' | 'lifetime';
+  const planType = subscription.plan_type as 'monthly' | 'unlimited';
   
   return {
     isActive: true,
@@ -46,36 +46,45 @@ export async function canUserGenerate(userId: string): Promise<{
   const status = await getSubscriptionStatus(userId);
   
   if (status.isActive && status.isPremium) {
+    // Unlimited plans have no generation cap
+    if (status.planType === 'unlimited') {
+      return { canGenerate: true, upgradeRequired: false };
+    }
+    
+    // Pro monthly plan: 5 theses per month
+    if (status.planType === 'monthly') {
+      const supabaseCheck = await createServerSupabaseClient();
+      const firstDay = new Date();
+      firstDay.setDate(1);
+      firstDay.setHours(0, 0, 0, 0);
+      
+      const { data: monthlyUsage } = await supabaseCheck
+        .from('usage')
+        .select('theses_generated')
+        .eq('user_id', userId)
+        .gte('date', firstDay.toISOString().split('T')[0]);
+      
+      const totalThisMonth = monthlyUsage?.reduce((sum, u) => sum + u.theses_generated, 0) || 0;
+      
+      if (totalThisMonth >= 5) {
+        return {
+          canGenerate: false,
+          reason: "You've used all 5 thesis generations this month. Upgrade to Pro Unlimited for unlimited generation.",
+          upgradeRequired: true,
+        };
+      }
+      return { canGenerate: true, upgradeRequired: false };
+    }
+    
     return { canGenerate: true, upgradeRequired: false };
   }
   
-  // Check free tier usage
-  const supabase = await createServerSupabaseClient();
-  
-  // Get first day of current month
-  const firstDayOfMonth = new Date();
-  firstDayOfMonth.setDate(1);
-  firstDayOfMonth.setHours(0, 0, 0, 0);
-  
-  // Check monthly usage for free tier
-  const { data: monthlyUsage } = await supabase
-    .from('usage')
-    .select('theses_generated')
-    .eq('user_id', userId)
-    .gte('date', firstDayOfMonth.toISOString().split('T')[0]);
-  
-  const totalThisMonth = monthlyUsage?.reduce((sum, u) => sum + u.theses_generated, 0) || 0;
-  
-  // Free users get 1 thesis per month
-  if (totalThisMonth >= 1) {
-    return {
-      canGenerate: false,
-      reason: "You've used your free thesis this month. Upgrade for unlimited generation.",
-      upgradeRequired: true,
-    };
-  }
-  
-  return { canGenerate: true, upgradeRequired: false };
+  // No active subscription — must subscribe to generate
+  return {
+    canGenerate: false,
+    reason: 'Subscribe to start generating your thesis.',
+    upgradeRequired: true,
+  };
 }
 
 export async function incrementUsage(

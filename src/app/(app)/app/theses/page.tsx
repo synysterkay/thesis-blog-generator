@@ -11,19 +11,19 @@ import { motion } from 'framer-motion';
 import { 
   Plus, 
   FileText, 
-  Search, 
-  Filter,
+  MagnifyingGlass, 
+  Funnel,
   ArrowRight,
   Clock,
   Check,
-  AlertCircle,
-  Loader2,
-  Trash2,
-  MoreVertical,
+  WarningCircle,
+  SpinnerGap,
+  Trash,
+  DotsThreeVertical,
   Play,
-  Library,
-  Sparkles
-} from 'lucide-react';
+  Books,
+  Sparkle
+} from '@phosphor-icons/react';
 import { Thesis } from '@/types';
 import { toast } from 'sonner';
 
@@ -126,13 +126,13 @@ export default function ThesesPage() {
   const statusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Check className="w-4 h-4 text-green-600" />;
+        return <Check size={16} weight="bold" className="text-slate-900" />;
       case 'generating':
-        return <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />;
+        return <SpinnerGap size={16} className="text-slate-900 animate-spin" />;
       case 'exported':
-        return <Check className="w-4 h-4 text-purple-600" />;
+        return <Check size={16} weight="bold" className="text-slate-900" />;
       default:
-        return <Clock className="w-4 h-4 text-slate-400" />;
+        return <Clock size={16} weight="duotone" className="text-slate-600" />;
     }
   };
 
@@ -140,8 +140,8 @@ export default function ThesesPage() {
     <div className="relative min-h-screen max-w-6xl mx-auto">
       {/* Subtle Background Effects */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-1/4 w-48 h-48 bg-purple-400/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/4 w-32 h-32 bg-blue-400/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-1/4 w-48 h-48 bg-slate-100/50 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/4 w-32 h-32 bg-slate-100/50 rounded-full blur-3xl" />
       </div>
 
       {/* Header */}
@@ -151,19 +151,19 @@ export default function ThesesPage() {
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-violet-500/20">
-            <Library className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-900">
+            <Books size={22} weight="duotone" />
           </div>
           <div>
             <h1 className="text-xl font-semibold text-slate-900">
               My Library
             </h1>
-            <p className="text-sm text-slate-500">{filteredTheses.length} project{filteredTheses.length !== 1 ? 's' : ''}</p>
+            <p className="text-sm text-slate-600">{filteredTheses.length} project{filteredTheses.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
         <Link href="/app/new">
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-sm h-9">
-            <Plus className="mr-1.5 w-3.5 h-3.5" />
+          <Button size="sm" className="bg-slate-900 hover:bg-slate-800 text-white text-sm h-9">
+            <Plus size={14} weight="bold" className="mr-1.5" />
             New Thesis
           </Button>
         </Link>
@@ -177,12 +177,12 @@ export default function ThesesPage() {
         className="flex flex-col sm:flex-row gap-3 mb-6"
       >
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search theses..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-white border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-white border border-slate-200 focus:border-slate-300 focus:ring-2 focus:ring-slate-200 outline-none transition-all text-slate-900 placeholder:text-slate-600"
           />
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -192,8 +192,8 @@ export default function ThesesPage() {
               onClick={() => setFilter(status)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 filter === status
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -213,15 +213,15 @@ export default function ThesesPage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="rounded-xl p-8 bg-slate-50 border border-slate-200 text-center"
+          className="rounded-xl p-8 bg-white border border-slate-200 text-center"
         >
           <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-            <FileText className="w-6 h-6 text-slate-400" />
+            <FileText size={24} weight="duotone" className="text-slate-600" />
           </div>
           <h3 className="text-sm font-semibold text-slate-900 mb-1">
             {search || filter !== 'all' ? 'No matching theses' : 'No theses yet'}
           </h3>
-          <p className="text-xs text-slate-500 mb-4 max-w-xs mx-auto">
+          <p className="text-xs text-slate-600 mb-4 max-w-xs mx-auto">
             {search || filter !== 'all' 
               ? 'Try adjusting your search or filters'
               : 'Create your first AI-powered thesis'
@@ -229,8 +229,8 @@ export default function ThesesPage() {
           </p>
           {!search && filter === 'all' && (
             <Link href="/app/new">
-              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="mr-1.5 w-3.5 h-3.5" />
+              <Button size="sm" className="bg-slate-900 hover:bg-slate-800 text-white">
+                <Plus size={14} weight="bold" className="mr-1.5" />
                 Create Thesis
               </Button>
             </Link>
@@ -246,73 +246,79 @@ export default function ThesesPage() {
               transition={{ delay: index * 0.03 }}
             >
               <Link href={`/app/thesis/${thesis.id}`}>
-                <div className="group relative rounded-xl p-4 bg-white border border-slate-200 hover:border-blue-200 hover:shadow-md transition-all duration-200 h-full flex flex-col">
+                <div className="group relative rounded-xl p-4 bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200 h-full flex flex-col">
                   {/* Delete button */}
                   <button
                     onClick={(e) => deleteThesis(e, thesis.id)}
                     disabled={deletingId === thesis.id}
-                    className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all z-10"
+                    className="absolute top-3 right-3 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 bg-slate-100 hover:bg-red-500/20 text-slate-600 hover:text-red-400 transition-all z-10"
                   >
                     {deletingId === thesis.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <SpinnerGap size={14} className="animate-spin" />
                     ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash size={14} />
                     )}
                   </button>
 
                   <div className="flex items-start justify-between mb-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                      thesis.status === 'completed' 
-                        ? 'bg-emerald-100 text-emerald-600' 
-                        : thesis.status === 'generating' 
-                        ? 'bg-blue-100 text-blue-600' 
-                        : thesis.status === 'exported' 
-                        ? 'bg-violet-100 text-violet-600'
-                        : 'bg-amber-100 text-amber-600'
-                    }`}>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-slate-100 text-slate-900">
                       {thesis.status === 'generating' ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <SpinnerGap size={16} className="animate-spin" />
                       ) : (
-                        <FileText className="w-4 h-4" />
+                        <FileText size={16} weight="duotone" />
                       )}
                     </div>
-                    <span className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
-                      thesis.status === 'completed' 
-                        ? 'bg-emerald-50 text-emerald-600' 
-                        : thesis.status === 'generating' 
-                        ? 'bg-blue-50 text-blue-600' 
-                        : thesis.status === 'exported' 
-                        ? 'bg-violet-50 text-violet-600'
-                        : 'bg-amber-50 text-amber-600'
-                    }`}>
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-900">
                       {statusIcon(thesis.status)}
                       {thesis.status.charAt(0).toUpperCase() + thesis.status.slice(1)}
                     </span>
                   </div>
                   
-                  <h3 className="text-sm font-medium text-slate-900 mb-1.5 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-sm font-medium text-slate-900 mb-1.5 line-clamp-2 group-hover:text-slate-600 transition-colors">
                     {thesis.title}
                   </h3>
                   
-                  <p className="text-xs text-slate-500 mb-3 line-clamp-1 flex-1">
+                  <p className="text-xs text-slate-600 mb-3 line-clamp-1 flex-1">
                     {thesis.topic || `${thesis.academic_field || 'General'} • ${thesis.writing_style || 'Academic'}`}
                   </p>
+
+                  {/* Progress bar */}
+                  {thesis.total_chapters > 0 && (
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-slate-600">
+                          {chapterCounts[thesis.id] ?? 0}/{thesis.total_chapters} chapters
+                        </span>
+                        <span className="text-[10px] font-medium text-slate-600">
+                          {Math.round(((chapterCounts[thesis.id] ?? 0) / thesis.total_chapters) * 100)}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            thesis.status === 'completed' ? 'bg-emerald-500' : 'bg-slate-900'
+                          }`}
+                          style={{ width: `${Math.min(((chapterCounts[thesis.id] ?? 0) / thesis.total_chapters) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                   
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">
+                  <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-600">
                       {new Date(thesis.updated_at).toLocaleDateString()}
                     </span>
                     {thesis.status === 'draft' ? (
-                      <span className="text-[10px] text-amber-600 font-medium flex items-center gap-1">
-                        <Play className="w-2.5 h-2.5" /> Continue
+                      <span className="text-[10px] text-slate-900 font-medium flex items-center gap-1">
+                        <Play size={10} weight="fill" /> Continue
                       </span>
                     ) : thesis.status === 'generating' ? (
-                      <span className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
-                        <Loader2 className="w-2.5 h-2.5 animate-spin" /> In Progress
+                      <span className="text-[10px] text-slate-900 font-medium flex items-center gap-1">
+                        <SpinnerGap size={10} className="animate-spin" /> In Progress
                       </span>
                     ) : (
-                      <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5" />
+                      <span className="text-[10px] text-slate-600 flex items-center gap-1">
+                        <Sparkle size={10} weight="duotone" />
                         {chapterCounts[thesis.id] ?? thesis.total_chapters ?? 0} chapters
                       </span>
                     )}

@@ -64,8 +64,7 @@ LEMONSQUEEZY_API_KEY=your_lemonsqueezy_api_key
 LEMONSQUEEZY_STORE_ID=your_store_id
 LEMONSQUEEZY_WEBHOOK_SECRET=your_webhook_secret
 LEMONSQUEEZY_MONTHLY_VARIANT_ID=your_monthly_variant_id
-LEMONSQUEEZY_YEARLY_VARIANT_ID=your_yearly_variant_id
-LEMONSQUEEZY_LIFETIME_VARIANT_ID=your_lifetime_variant_id
+LEMONSQUEEZY_UNLIMITED_VARIANT_ID=your_unlimited_variant_id
 
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```

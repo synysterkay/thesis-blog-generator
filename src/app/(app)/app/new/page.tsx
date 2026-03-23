@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { createClient } from '@/lib/supabase/client';
@@ -15,21 +15,21 @@ import { ReferenceUpload } from '@/components/thesis/reference-upload';
 import { 
   ArrowLeft, 
   ArrowRight, 
-  Sparkles, 
+  Sparkle, 
   FileText,
   BookOpen,
-  ChevronRight,
+  CaretRight,
   Check,
   Lock,
-  Loader2,
-  Pencil,
-  Wand2,
+  SpinnerGap,
+  PencilSimple,
+  MagicWand,
   Table,
-  BarChart3,
+  ChartBar,
   Plus,
-  Upload
-} from 'lucide-react';
-import { ACADEMIC_FIELDS, WRITING_STYLES, TARGET_LENGTHS } from '@/types';
+  UploadSimple
+} from '@phosphor-icons/react';
+import { ACADEMIC_FIELDS, WRITING_STYLES, TARGET_LENGTHS, SUPPORTED_LANGUAGES } from '@/types';
 import { canUserGenerate } from '@/lib/subscription-client';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -72,6 +72,7 @@ export default function NewThesisPage() {
   const [editingChapterValue, setEditingChapterValue] = useState('');
   const [editingSubchapter, setEditingSubchapter] = useState<{ chapterIndex: number; subIndex: number } | null>(null);
   const [editingSubchapterValue, setEditingSubchapterValue] = useState('');
+  const [showVisualHint, setShowVisualHint] = useState(false);
   
   // Form state
   const [title, setTitle] = useState('');
@@ -79,6 +80,7 @@ export default function NewThesisPage() {
   const [field, setField] = useState('');
   const [writingStyle, setWritingStyle] = useState('');
   const [targetLength, setTargetLength] = useState('');
+  const [language, setLanguage] = useState('English');
   const [chapters, setChapters] = useState<string[]>([]);
   const [outlines, setOutlines] = useState<Record<string, string[]>>({});
   const [outlineVisuals, setOutlineVisuals] = useState<OutlineVisualsMap>({});
@@ -86,6 +88,15 @@ export default function NewThesisPage() {
   const [enableCharts, setEnableCharts] = useState(true);
   const [newChapter, setNewChapter] = useState('');
   const [referenceDocuments, setReferenceDocuments] = useState<ReferenceDocument[]>([]);
+
+  // Show coach mark on outline step — shows every time until user dismisses
+  useEffect(() => {
+    if (currentStep === 5 && Object.keys(outlines).length > 0 && !generatingOutlines) {
+      setShowVisualHint(true);
+    } else {
+      setShowVisualHint(false);
+    }
+  }, [currentStep, outlines, generatingOutlines]);
 
   const router = useRouter();
   const { user, subscription } = useAuth();
@@ -262,6 +273,7 @@ export default function NewThesisPage() {
           description,
           field,
           chapters,
+          language,
         }),
       });
 
@@ -311,6 +323,7 @@ export default function NewThesisPage() {
           description,
           field,
           targetLength,
+          language,
         }),
       });
 
@@ -401,7 +414,7 @@ export default function NewThesisPage() {
           title,
           academic_field: field,
           degree_level: 'master', // Default to master's level
-          language: 'english',
+          language,
           status: 'draft',
           word_count: 0,
           page_count: 0,
@@ -445,8 +458,7 @@ export default function NewThesisPage() {
         console.error('Error creating chapters:', chaptersError);
       }
 
-      toast.success('Click Generate! To Start The generation...');
-      router.push(`/app/thesis/${thesis.id}`);
+      router.push(`/app/thesis/${thesis.id}?autostart=true`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to create thesis');
     } finally {
@@ -480,13 +492,13 @@ export default function NewThesisPage() {
       <div className="mb-6">
         <button
           onClick={() => currentStep > 1 ? setCurrentStep(currentStep - 1) : router.back()}
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 mb-3"
+          className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 mb-3"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft size={14} />
           {currentStep > 1 ? 'Previous' : 'Back'}
         </button>
         <h1 className="text-xl font-semibold text-slate-900 mb-1">Create New Thesis</h1>
-        <p className="text-sm text-slate-500">Let&apos;s build your academic masterpiece</p>
+        <p className="text-sm text-slate-600">Let&apos;s build your academic masterpiece</p>
       </div>
 
       {/* Progress */}
@@ -496,14 +508,14 @@ export default function NewThesisPage() {
             <div key={step.id} className="flex items-center">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
                 currentStep >= step.id 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-slate-100 text-slate-500'
+                  ? 'bg-slate-900 text-white' 
+                  : 'bg-slate-100 text-slate-600'
               }`}>
-                {currentStep > step.id ? <Check className="w-3.5 h-3.5" /> : step.id}
+                {currentStep > step.id ? <Check size={14} /> : step.id}
               </div>
               {index < steps.length - 1 && (
                 <div className={`w-10 sm:w-16 h-0.5 mx-1.5 ${
-                  currentStep > step.id ? 'bg-blue-600' : 'bg-slate-200'
+                  currentStep > step.id ? 'bg-slate-900' : 'bg-slate-200'
                 }`} />
               )}
             </div>
@@ -513,7 +525,7 @@ export default function NewThesisPage() {
           {steps.map((step) => (
             <div key={step.id} className="text-center" style={{ width: '60px' }}>
               <p className={`text-[10px] font-medium ${
-                currentStep >= step.id ? 'text-blue-600' : 'text-slate-400'
+                currentStep >= step.id ? 'text-slate-900' : 'text-slate-600'
               }`}>
                 {step.title}
               </p>
@@ -530,7 +542,7 @@ export default function NewThesisPage() {
               <h2 className="text-base font-semibold text-slate-900 mb-0.5">
                 What&apos;s your thesis about?
               </h2>
-              <p className="text-xs text-slate-500 mb-3">
+              <p className="text-xs text-slate-600 mb-3">
                 Give your thesis a clear, descriptive title
               </p>
               <Input
@@ -542,7 +554,7 @@ export default function NewThesisPage() {
             </div>
 
             <div>
-              <p className="text-xs text-slate-500 mb-3">
+              <p className="text-xs text-slate-600 mb-3">
                 Describe what you want to explore in your thesis
               </p>
               <Textarea
@@ -553,6 +565,14 @@ export default function NewThesisPage() {
                 rows={4}
               />
             </div>
+
+            <Select
+              label="Language"
+              value={language}
+              onChange={(value) => setLanguage(value)}
+              placeholder="Select language"
+              options={SUPPORTED_LANGUAGES.map((lang) => ({ value: lang.value, label: lang.label }))}
+            />
           </div>
         )}
 
@@ -562,7 +582,7 @@ export default function NewThesisPage() {
               <h2 className="text-base font-semibold text-slate-900 mb-0.5">
                 Academic Details
               </h2>
-              <p className="text-xs text-slate-500 mb-3">
+              <p className="text-xs text-slate-600 mb-3">
                 Tell us about your academic field and preferences
               </p>
               
@@ -602,7 +622,7 @@ export default function NewThesisPage() {
               <h2 className="text-base font-semibold text-slate-900 mb-0.5">
                 Reference Materials
               </h2>
-              <p className="text-xs text-slate-500 mb-3">
+              <p className="text-xs text-slate-600 mb-3">
                 Upload documents that the AI will use as sources for your thesis (optional)
               </p>
               
@@ -631,15 +651,15 @@ export default function NewThesisPage() {
                     className="flex items-center gap-1.5 h-7 text-xs"
                   >
                     {generatingChapters ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <SpinnerGap size={12} className="animate-spin" />
                     ) : (
-                      <Wand2 className="w-3 h-3" />
+                      <MagicWand size={12} />
                     )}
                     {generatingChapters ? 'Regenerating...' : 'Regenerate'}
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-slate-500 mb-3">
+              <p className="text-xs text-slate-600 mb-3">
                 {generatingChapters 
                   ? 'AI is generating chapters based on your thesis topic...'
                   : 'Chapters generated by AI. Click to edit or drag to reorder.'}
@@ -650,18 +670,18 @@ export default function NewThesisPage() {
                 <div className="flex flex-col items-center justify-center py-10 space-y-4">
                   <div className="relative">
                     <div className="w-16 h-16 border-4 border-slate-100 rounded-full"></div>
-                    <div className="w-16 h-16 border-4 border-blue-600 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
+                    <div className="w-16 h-16 border-4 border-slate-900 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-blue-600 animate-pulse" />
+                      <Sparkle size={24} className="text-slate-900 animate-pulse" />
                     </div>
                   </div>
                   <div className="text-center space-y-1">
                     <p className="text-sm font-semibold text-slate-900">AI is generating chapters...</p>
-                    <p className="text-xs text-slate-500 max-w-xs">{title}</p>
+                    <p className="text-xs text-slate-600 max-w-xs">{title}</p>
                     <div className="flex items-center justify-center gap-1 mt-2">
-                      <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
                   </div>
                 </div>
@@ -673,9 +693,9 @@ export default function NewThesisPage() {
                   {chapters.map((chapter, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg group"
+                      className="flex items-center gap-2 p-2.5 bg-white rounded-lg group"
                     >
-                      <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded text-xs font-medium flex items-center justify-center">
+                      <span className="w-5 h-5 bg-slate-100 text-slate-900 rounded text-xs font-medium flex items-center justify-center">
                         {index + 1}
                       </span>
                       {editingChapterIndex === index ? (
@@ -691,7 +711,7 @@ export default function NewThesisPage() {
                             }}
                           />
                           <Button size="sm" onClick={saveChapterEdit} className="h-7 px-2">
-                            <Check className="w-3.5 h-3.5" />
+                            <Check size={14} />
                           </Button>
                           <Button size="sm" variant="ghost" onClick={cancelChapterEdit} className="h-7 px-2">
                             ×
@@ -700,20 +720,20 @@ export default function NewThesisPage() {
                       ) : (
                         <>
                           <span 
-                            className="flex-1 text-sm text-slate-900 cursor-pointer hover:text-blue-600 transition-colors"
+                            className="flex-1 text-sm text-slate-900 cursor-pointer hover:text-slate-900 transition-colors"
                             onClick={() => startEditingChapter(index)}
                           >
                             {chapter}
                           </span>
                           <button
                             onClick={() => startEditingChapter(index)}
-                            className="text-slate-400 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100"
+                            className="text-slate-600 hover:text-slate-900 transition-colors opacity-0 group-hover:opacity-100"
                           >
-                            <Pencil className="w-3 h-3" />
+                            <PencilSimple size={12} />
                           </button>
                           <button
                             onClick={() => removeChapter(index)}
-                            className="text-slate-400 hover:text-red-500 transition-colors"
+                            className="text-slate-600 hover:text-slate-900 transition-colors"
                           >
                             ×
                           </button>
@@ -760,15 +780,15 @@ export default function NewThesisPage() {
                     className="flex items-center gap-1.5 h-7 text-xs"
                   >
                     {generatingOutlines ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <SpinnerGap size={12} className="animate-spin" />
                     ) : (
-                      <Wand2 className="w-3 h-3" />
+                      <MagicWand size={12} />
                     )}
                     {generatingOutlines ? 'Regenerating...' : 'Regenerate All'}
                   </Button>
                 )}
               </div>
-              <p className="text-xs text-slate-500 mb-3">
+              <p className="text-xs text-slate-600 mb-3">
                 {generatingOutlines 
                   ? 'AI is generating subchapter outlines...'
                   : 'Subchapters for each chapter. Click to edit.'}
@@ -776,7 +796,7 @@ export default function NewThesisPage() {
 
               {/* Pro feature notice for tables/charts */}
               {!subscription?.isActive && (
-                <div className="mb-3 p-2.5 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+                <div className="mb-3 p-2.5 bg-white border border-slate-200 rounded-lg">
                 </div>
               )}
 
@@ -785,19 +805,42 @@ export default function NewThesisPage() {
                 <div className="flex flex-col items-center justify-center py-10 space-y-4">
                   <div className="relative">
                     <div className="w-16 h-16 border-4 border-slate-100 rounded-full"></div>
-                    <div className="w-16 h-16 border-4 border-purple-600 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
+                    <div className="w-16 h-16 border-4 border-slate-900 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <FileText className="w-6 h-6 text-purple-600 animate-pulse" />
+                      <FileText size={24} className="text-slate-900 animate-pulse" />
                     </div>
                   </div>
                   <div className="text-center space-y-1">
                     <p className="text-sm font-semibold text-slate-900">AI is generating outlines...</p>
-                    <p className="text-xs text-slate-500">{chapters.length} chapters to process</p>
+                    <p className="text-xs text-slate-600">{chapters.length} chapters to process</p>
                     <div className="flex items-center justify-center gap-1 mt-2">
-                      <div className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Coach mark tooltip for table/chart buttons */}
+              {showVisualHint && Object.keys(outlines).length > 0 && (
+                <div className="relative mb-3 animate-fade-in">
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-lg">
+                    <div className="flex items-center gap-1">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-900 opacity-60"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-900"></span>
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-900">
+                      <strong>Tip:</strong> Click <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-100 rounded-full text-[10px] mx-0.5"><Table size={9} />+ Table</span> or <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-100 rounded-full text-[10px] mx-0.5"><ChartBar size={9} />+ Chart</span> under any section to add visuals to your thesis
+                    </p>
+                    <button
+                      onClick={() => setShowVisualHint(false)}
+                      className="text-slate-600 hover:text-slate-900 ml-auto flex-shrink-0"
+                    >
+                      ×
+                    </button>
                   </div>
                 </div>
               )}
@@ -814,8 +857,8 @@ export default function NewThesisPage() {
                         key={chapterIndex} 
                         className="border rounded-lg overflow-hidden"
                       >
-                        <div className="p-2.5 flex items-center gap-2 bg-slate-50">
-                          <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded text-xs font-medium flex items-center justify-center">
+                        <div className="p-2.5 flex items-center gap-2 bg-white">
+                          <span className="w-5 h-5 bg-slate-100 text-slate-900 rounded text-xs font-medium flex items-center justify-center">
                             {chapterIndex + 1}
                           </span>
                           <span className="flex-1 text-sm font-medium text-slate-900">{chapter}</span>
@@ -832,7 +875,7 @@ export default function NewThesisPage() {
                                   key={subIndex}
                                   className="flex items-start gap-2 pl-3 group py-0.5"
                                 >
-                                  <span className="text-xs text-slate-400 w-6 pt-0.5">
+                                  <span className="text-xs text-slate-600 w-6 pt-0.5">
                                     {chapterIndex + 1}.{subIndex + 1}
                                   </span>
                                   {editingSubchapter?.chapterIndex === chapterIndex && editingSubchapter?.subIndex === subIndex ? (
@@ -850,7 +893,7 @@ export default function NewThesisPage() {
                                         }}
                                       />
                                       <Button size="sm" onClick={saveSubchapterEdit} className="h-7 px-2">
-                                        <Check className="w-3 h-3" />
+                                        <Check size={12} />
                                       </Button>
                                       <Button size="sm" variant="ghost" onClick={cancelSubchapterEdit} className="h-7 px-2">
                                         ×
@@ -860,20 +903,20 @@ export default function NewThesisPage() {
                                     <div className="flex-1">
                                       <div className="flex items-center gap-1.5">
                                         <span 
-                                          className="flex-1 text-xs text-slate-700 cursor-pointer hover:text-blue-600 transition-colors"
+                                          className="flex-1 text-xs text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
                                           onClick={() => startEditingSubchapter(chapterIndex, subIndex)}
                                         >
                                           {subchapter}
                                         </span>
                                         <button
                                           onClick={() => startEditingSubchapter(chapterIndex, subIndex)}
-                                          className="text-slate-400 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100"
+                                          className="text-slate-600 hover:text-slate-900 transition-colors opacity-0 group-hover:opacity-100"
                                         >
-                                          <Pencil className="w-2.5 h-2.5" />
+                                          <PencilSimple size={10} />
                                         </button>
                                         <button
                                           onClick={() => removeSubchapter(chapterIndex, subIndex)}
-                                          className="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                          className="text-slate-600 hover:text-slate-900 transition-colors opacity-0 group-hover:opacity-100"
                                         >
                                           ×
                                         </button>
@@ -884,24 +927,24 @@ export default function NewThesisPage() {
                                           onClick={() => toggleOutlineVisual(chapterIndex, subIndex, 'table')}
                                           className={`flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${
                                             hasTable
-                                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
-                                              : 'bg-slate-100 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200'
+                                              ? 'bg-slate-200 text-slate-900 border border-slate-300'
+                                              : `bg-slate-100 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 ${showVisualHint && chapterIndex === 0 && subIndex === 0 ? 'animate-pulse ring-1 ring-slate-300' : ''}`
                                           }`}
                                           title={hasTable ? 'Remove table' : 'Add table'}
                                         >
-                                          <Table className="w-2.5 h-2.5" />
+                                          <Table size={10} />
                                           {hasTable ? 'Table' : '+ Table'}
                                         </button>
                                         <button
                                           onClick={() => toggleOutlineVisual(chapterIndex, subIndex, 'chart')}
                                           className={`flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full transition-colors ${
                                             hasChart
-                                              ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                                              : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600 border border-slate-200'
+                                              ? 'bg-slate-200 text-slate-900 border border-slate-300'
+                                              : `bg-slate-100 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 ${showVisualHint && chapterIndex === 0 && subIndex === 0 ? 'animate-pulse ring-1 ring-slate-300' : ''}`
                                           }`}
                                           title={hasChart ? 'Remove chart' : 'Add chart'}
                                         >
-                                          <BarChart3 className="w-2.5 h-2.5" />
+                                          <ChartBar size={10} />
                                           {hasChart ? 'Chart' : '+ Chart'}
                                         </button>
                                       </div>
@@ -912,7 +955,7 @@ export default function NewThesisPage() {
                             })}
                             <button
                               onClick={() => addSubchapter(chapterIndex)}
-                              className="text-xs text-blue-600 hover:text-blue-700 pl-3 flex items-center gap-0.5 mt-1"
+                              className="text-xs text-slate-600 hover:text-slate-900 pl-3 flex items-center gap-0.5 mt-1"
                             >
                               <span className="text-sm leading-none">+</span> Add subchapter
                             </button>
@@ -934,51 +977,51 @@ export default function NewThesisPage() {
               <h2 className="text-base font-semibold text-slate-900 mb-0.5">
                 Review Your Thesis
               </h2>
-              <p className="text-xs text-slate-500 mb-4">
+              <p className="text-xs text-slate-600 mb-4">
                 Make sure everything looks good before generating
               </p>
 
               <div className="space-y-3">
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">Title</p>
+                <div className="p-3 bg-white rounded-lg">
+                  <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Title</p>
                   <p className="text-sm font-medium text-slate-900">{title}</p>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">Description</p>
-                  <p className="text-sm text-slate-700">{description}</p>
+                <div className="p-3 bg-white rounded-lg">
+                  <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Description</p>
+                  <p className="text-sm text-slate-600">{description}</p>
                 </div>
 
                 {/* Reference Documents summary */}
                 {referenceDocuments.length > 0 && (
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
-                    <p className="text-[10px] text-blue-600 uppercase tracking-wide mb-0.5">Reference Materials</p>
-                    <p className="text-sm text-blue-800">
+                  <div className="p-3 bg-white rounded-lg border border-slate-200">
+                    <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Reference Materials</p>
+                    <p className="text-sm text-slate-900">
                       {referenceDocuments.length} document{referenceDocuments.length !== 1 ? 's' : ''} uploaded
                     </p>
-                    <p className="text-xs text-blue-600 mt-1">
+                    <p className="text-xs text-slate-600 mt-1">
                       AI will use these as sources during generation
                     </p>
                   </div>
                 )}
 
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">Field</p>
+                  <div className="p-3 bg-white rounded-lg">
+                    <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Field</p>
                     <p className="text-xs font-medium text-slate-900">{field}</p>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">Style</p>
+                  <div className="p-3 bg-white rounded-lg">
+                    <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Style</p>
                     <p className="text-xs font-medium text-slate-900">{writingStyle}</p>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-lg">
-                    <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-0.5">Length</p>
+                  <div className="p-3 bg-white rounded-lg">
+                    <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-0.5">Length</p>
                     <p className="text-xs font-medium text-slate-900">{targetLength}</p>
                   </div>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1.5">Chapters & Outlines ({chapters.length} chapters)</p>
+                <div className="p-3 bg-white rounded-lg">
+                  <p className="text-[10px] text-slate-600 uppercase tracking-wide mb-1.5">Chapters & Outlines ({chapters.length} chapters)</p>
                   <div className="space-y-2">
                     {chapters.map((chapter, index) => {
                       const chapterNum = (index + 1).toString();
@@ -999,17 +1042,17 @@ export default function NewThesisPage() {
                                 const hasChart = visuals?.hasChart;
                                 
                                 return (
-                                  <div key={i} className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                                  <div key={i} className="flex items-center gap-1.5 text-[10px] text-slate-600">
                                     <span>{index + 1}.{i + 1} {sub}</span>
                                     {hasTable && (
-                                      <span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[8px]">
-                                        <Table className="w-2 h-2" />
+                                      <span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-slate-200 text-slate-900 rounded text-[8px]">
+                                        <Table size={8} />
                                         Table
                                       </span>
                                     )}
                                     {hasChart && (
-                                      <span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-blue-100 text-blue-700 rounded text-[8px]">
-                                        <BarChart3 className="w-2 h-2" />
+                                      <span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-slate-200 text-slate-900 rounded text-[8px]">
+                                        <ChartBar size={8} />
                                         Chart
                                       </span>
                                     )}
@@ -1022,16 +1065,6 @@ export default function NewThesisPage() {
                       );
                     })}
                   </div>
-                  
-                  {/* Free tier notice */}
-                  {!subscription?.isActive && chapters.length > 3 && (
-                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-[10px] text-amber-700">
-                        <strong>Free Plan:</strong> Only the first 3 chapters will be generated. 
-                        {' '}<Link href="/app/upgrade" className="underline font-medium">Upgrade to Pro</Link> to generate all {chapters.length} chapters.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1048,7 +1081,7 @@ export default function NewThesisPage() {
           disabled={currentStep === 1}
           className="text-sm"
         >
-          <ArrowLeft className="mr-1.5 w-3.5 h-3.5" />
+          <ArrowLeft size={14} className="mr-1.5" />
           Back
         </Button>
 
@@ -1062,13 +1095,13 @@ export default function NewThesisPage() {
             'Creating...'
           ) : currentStep === 6 ? (
             <>
-              <Sparkles className="mr-1.5 w-3.5 h-3.5" />
+              <Sparkle size={14} className="mr-1.5" />
               Generate Thesis
             </>
           ) : (
             <>
               Continue
-              <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
+              <ArrowRight size={14} className="ml-1.5" />
             </>
           )}
         </Button>
@@ -1080,22 +1113,22 @@ export default function NewThesisPage() {
         onClose={() => setShowPaywall(false)}
       >
         <div className="text-center py-3">
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-            <Lock className="w-6 h-6 text-blue-600" />
+          <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+            <Lock size={24} className="text-slate-900" />
           </div>
           <h3 className="text-lg font-semibold text-slate-900 mb-1">
             Upgrade to Continue
           </h3>
           <p className="text-sm text-slate-600 mb-1">
-            You&apos;ve used your free thesis this month.
+            A Pro subscription is required to generate your thesis.
           </p>
           <p className="text-sm text-slate-600 mb-4">
-            Upgrade to Pro for unlimited thesis generations.
+            Subscribe to Pro to start generating your academic masterpiece.
           </p>
           <Link href="/app/upgrade">
             <Button size="sm" className="w-full mb-2">
               View Plans
-              <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
+              <ArrowRight size={14} className="ml-1.5" />
             </Button>
           </Link>
           <Button variant="ghost" size="sm" onClick={() => setShowPaywall(false)} className="w-full">

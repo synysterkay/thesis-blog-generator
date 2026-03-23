@@ -3,19 +3,14 @@ import crypto from 'crypto';
 // Define plan metadata (prices, names)
 export const THESIS_PLANS = {
   monthly: {
-    name: 'Thesis Generator Pro Monthly',
-    price: 9.99,
+    name: 'Thesis Generator Pro',
+    price: 9,
     interval: 'month' as const,
   },
-  yearly: {
-    name: 'Thesis Generator Pro Yearly',
-    price: 79.99,
-    interval: 'year' as const,
-  },
-  lifetime: {
-    name: 'Thesis Generator Lifetime',
-    price: 199.99,
-    interval: 'lifetime' as const,
+  unlimited: {
+    name: 'Thesis Generator Pro Unlimited',
+    price: 19,
+    interval: 'month' as const,
   },
 };
 
@@ -25,8 +20,7 @@ export type PlanType = keyof typeof THESIS_PLANS;
 function getVariantId(plan: PlanType): string {
   const variantIds: Record<PlanType, string | undefined> = {
     monthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID,
-    yearly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_YEARLY_VARIANT_ID,
-    lifetime: process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID,
+    unlimited: process.env.NEXT_PUBLIC_LEMONSQUEEZY_UNLIMITED_VARIANT_ID,
   };
   return variantIds[plan] || '';
 }
@@ -44,8 +38,7 @@ export async function createCheckout(
   if (!variantId) {
     console.error(`Variant ID not configured for plan: ${plan}. Available env vars:`, {
       monthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID ? 'set' : 'missing',
-      yearly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_YEARLY_VARIANT_ID ? 'set' : 'missing',
-      lifetime: process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID ? 'set' : 'missing',
+      unlimited: process.env.NEXT_PUBLIC_LEMONSQUEEZY_UNLIMITED_VARIANT_ID ? 'set' : 'missing',
     });
     throw new Error(`Variant ID not configured for plan: ${plan}`);
   }

@@ -3,12 +3,12 @@
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
 import { motion } from 'framer-motion';
-import { Target, Users, Lightbulb, Shield, Globe } from 'lucide-react';
+import { Crosshair, Users, Lightbulb, ShieldCheck, Globe } from '@phosphor-icons/react';
 import { LogoIcon } from '@/components/ui/logo';
 
 const values = [
   {
-    icon: Target,
+    icon: Crosshair,
     title: 'Mission-Driven',
     description: 'Empowering students and researchers to achieve their academic goals through intelligent technology.',
   },
@@ -23,7 +23,7 @@ const values = [
     description: 'Continuously pushing the boundaries of AI to deliver the most advanced writing assistance.',
   },
   {
-    icon: Shield,
+    icon: ShieldCheck,
     title: 'Integrity',
     description: 'Promoting responsible AI use while maintaining the highest standards of academic ethics.',
   },
@@ -42,13 +42,13 @@ export default function AboutPage() {
       <Navbar />
       
       {/* Hero */}
-      <section className="pt-32 pb-16 bg-gradient-to-b from-blue-50 to-white">
+      <section className="pt-32 pb-16 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-slate-800 flex items-center justify-center shadow-lg shadow-slate-500/25">
               <LogoIcon size="lg" variant="white" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
@@ -98,7 +98,7 @@ export default function AboutPage() {
                 transition={{ delay: index * 0.1 }}
                 className="text-center"
               >
-                <p className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">{stat.value}</p>
+                <p className="text-3xl md:text-4xl font-bold text-slate-700 mb-2">{stat.value}</p>
                 <p className="text-slate-600">{stat.label}</p>
               </motion.div>
             ))}
@@ -129,8 +129,8 @@ export default function AboutPage() {
                 transition={{ delay: index * 0.1 }}
                 className="flex gap-4 p-6 rounded-2xl bg-white border border-slate-200"
               >
-                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <value.icon className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                  <value.icon size={24} className="text-slate-600" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">{value.title}</h3>
@@ -143,13 +143,13 @@ export default function AboutPage() {
       </section>
 
       {/* Global */}
-      <section className="py-16 bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
+      <section className="py-16 bg-slate-800 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Globe className="w-12 h-12 mx-auto mb-6 opacity-80" />
+          <Globe size={48} className="mx-auto mb-6 opacity-80" />
           <h2 className="text-3xl font-bold mb-4">
             Trusted by Researchers Globally
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
+          <p className="text-xl text-slate-300 mb-8">
             From Stanford to Oxford, from MIT to Cambridge—students and researchers at top institutions worldwide trust Thesis Generator to help them succeed.
           </p>
         </div>

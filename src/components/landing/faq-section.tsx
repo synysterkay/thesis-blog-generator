@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown } from '@phosphor-icons/react';
 import { FAQ_ITEMS } from '@/lib/constants';
 
 function FAQItem({ question, answer }: { question: string; answer: string }) {
@@ -15,8 +15,9 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
         className="flex items-center justify-between w-full p-5 text-left"
       >
         <span className="font-medium text-slate-900">{question}</span>
-        <ChevronDown 
-          className={`w-5 h-5 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+        <CaretDown 
+          className={`text-slate-600 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          size={20}
         />
       </button>
       <AnimatePresence>
@@ -39,7 +40,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 
 export function FAQSection() {
   return (
-    <section className="py-24">
+    <section className="py-24 bg-slate-50">
       <div className="max-w-3xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -48,7 +49,7 @@ export function FAQSection() {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 font-serif">
             Frequently Asked Questions
           </h2>
           <p className="text-xl text-slate-600">

@@ -12,32 +12,39 @@ export async function canUserGenerate(
   // Check user's subscription status
   const { data: subscription } = await supabase
     .from('subscriptions')
-    .select('status')
+    .select('status, plan_type')
     .eq('user_id', userId)
     .eq('status', 'active')
     .single();
 
-  // If user has active subscription, they can generate
+  // If user has active subscription, check plan limits
   if (subscription) {
+    // Unlimited plans have no generation cap
+    if (subscription.plan_type === 'unlimited') {
+      return true;
+    }
+    
+    // Pro monthly: 5 theses per month
+    if (subscription.plan_type === 'monthly') {
+      const firstDayOfMonth = new Date();
+      firstDayOfMonth.setDate(1);
+      firstDayOfMonth.setHours(0, 0, 0, 0);
+      
+      const { data: monthlyUsage } = await supabase
+        .from('usage')
+        .select('theses_generated')
+        .eq('user_id', userId)
+        .gte('date', firstDayOfMonth.toISOString().split('T')[0]);
+      
+      const totalThisMonth = monthlyUsage?.reduce((sum, u) => sum + (u.theses_generated || 0), 0) || 0;
+      return totalThisMonth < 5;
+    }
+    
     return true;
   }
 
-  // Check free tier usage
-  const firstDayOfMonth = new Date();
-  firstDayOfMonth.setDate(1);
-  firstDayOfMonth.setHours(0, 0, 0, 0);
-
-  // Check monthly usage for free tier
-  const { data: monthlyUsage } = await supabase
-    .from('usage')
-    .select('theses_generated')
-    .eq('user_id', userId)
-    .gte('date', firstDayOfMonth.toISOString().split('T')[0]);
-
-  const totalThisMonth = monthlyUsage?.reduce((sum, u) => sum + (u.theses_generated || 0), 0) || 0;
-
-  // Free users get 1 thesis per month
-  return totalThisMonth < 1;
+  // No active subscription — must subscribe to generate
+  return false;
 }
 
 export async function getClientUsageStats(

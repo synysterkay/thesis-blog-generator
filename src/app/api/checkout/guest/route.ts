@@ -3,21 +3,15 @@ import { trackServerInitiateCheckout } from '@/lib/tiktok-server';
 
 export async function POST(request: Request) {
   try {
-    const { planId, email, discountCode } = await request.json();
+    const { planId, discountCode } = await request.json();
 
-    if (!planId || !email) {
-      return NextResponse.json({ error: 'Missing plan ID or email' }, { status: 400 });
+    if (!planId) {
+      return NextResponse.json({ error: 'Missing plan ID' }, { status: 400 });
     }
 
     // Validate planId
-    if (!['monthly', 'yearly', 'lifetime'].includes(planId)) {
+    if (!['monthly', 'unlimited'].includes(planId)) {
       return NextResponse.json({ error: 'Invalid plan ID' }, { status: 400 });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
     const LEMONSQUEEZY_API_KEY = process.env.LEMONSQUEEZY_API_KEY;
@@ -26,8 +20,7 @@ export async function POST(request: Request) {
     // Get variant ID based on plan
     const variantIds: Record<string, string | undefined> = {
       monthly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID,
-      yearly: process.env.NEXT_PUBLIC_LEMONSQUEEZY_YEARLY_VARIANT_ID,
-      lifetime: process.env.NEXT_PUBLIC_LEMONSQUEEZY_LIFETIME_VARIANT_ID,
+      unlimited: process.env.NEXT_PUBLIC_LEMONSQUEEZY_UNLIMITED_VARIANT_ID,
     };
     const variantId = variantIds[planId];
 
@@ -36,12 +29,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Payment not configured' }, { status: 500 });
     }
 
-    console.log('Creating guest checkout:', { planId, email, variantId, discountCode });
+    console.log('Creating guest checkout:', { planId, variantId, discountCode });
 
-    // Build checkout attributes
+    // Build checkout attributes - LemonSqueezy will collect email during checkout
     const checkoutAttributes: Record<string, unknown> = {
       checkout_data: {
-        email: email,
         discount_code: discountCode || undefined, // Apply discount code if provided
         custom: {
           // Mark this as a guest checkout - no user_id yet
@@ -50,8 +42,8 @@ export async function POST(request: Request) {
         },
       },
       product_options: {
-        // Redirect to signup page after payment with customer info
-        redirect_url: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/signup?paid=true&plan=${planId}&email=${encodeURIComponent(email)}`,
+        // Redirect to signup page after payment - user will enter email there
+        redirect_url: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/signup?paid=true&plan=${planId}`,
         receipt_button_text: 'Complete Your Account',
         receipt_thank_you_note: 'Payment successful! Click below to create your account and start using Thesis Generator.',
       },
@@ -100,12 +92,10 @@ export async function POST(request: Request) {
     
     // Track InitiateCheckout server-side (bypasses ad blockers)
     const priceMap: Record<string, number> = {
-      monthly: 9.99,
-      yearly: 79.99,
-      lifetime: 199.99,
+      monthly: 9,
+      unlimited: 19,
     };
     await trackServerInitiateCheckout({
-      email,
       contentId: `thesis_${planId}`,
       contentName: `Thesis Generator ${planId}`,
       value: priceMap[planId] || 9.99,

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers/auth-provider';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -9,25 +10,26 @@ import { motion } from 'framer-motion';
 import { 
   Plus, 
   FileText, 
-  Sparkles,
+  Sparkle,
   ArrowRight,
-  Loader2,
+  SpinnerGap,
   Play,
   Clock,
-  Zap,
-  CheckCircle2,
+  Lightning,
+  CheckCircle,
   BookOpen,
-  MessageSquare,
-  ChevronRight,
-  Download,
-  AlertCircle,
-  Trash2
-} from 'lucide-react';
+  ChatCircle,
+  CaretRight,
+  Export as ExportIcon,
+  WarningCircle,
+  Trash
+} from '@phosphor-icons/react';
 import { Thesis, Export } from '@/types';
 import { toast } from 'sonner';
 
 export default function DashboardPage() {
   const { user, subscription } = useAuth();
+  const router = useRouter();
   const [theses, setTheses] = useState<Thesis[]>([]);
   const [exports, setExports] = useState<Export[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +61,12 @@ export default function DashboardPage() {
         .limit(5);
 
       setTheses(data || []);
+
+      // Auto-redirect first-time users to thesis creation
+      if (!data || data.length === 0) {
+        router.push('/app/new');
+        return;
+      }
       
       // Fetch actual chapter counts
       if (data && data.length > 0) {
@@ -188,6 +196,8 @@ export default function DashboardPage() {
   const avgChapters = theses.length > 0 
     ? Math.round(theses.reduce((acc, t) => acc + (t.total_chapters || 0), 0) / theses.length) 
     : 0;
+  // ~250 words/hour for academic writing → hours saved
+  const hoursSaved = Math.round(totalWords / 250);
 
   // Time since last edit
   const getTimeAgo = (date: string) => {
@@ -227,7 +237,7 @@ export default function DashboardPage() {
       >
         {/* Minimal Header */}
         <motion.div variants={itemVariants} className="mb-8">
-          <p className="text-slate-500 text-sm">
+          <p className="text-slate-600 text-sm">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
           <h1 className="text-xl font-medium text-slate-900 mt-1">
@@ -252,29 +262,29 @@ export default function DashboardPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-3">
                           {activeThesis.status === 'generating' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-medium">
-                              <Loader2 className="w-3 h-3 animate-spin" />
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-100 text-slate-900 text-xs font-medium">
+                              <SpinnerGap size={12} className="animate-spin" />
                               Generating
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-medium">
-                              <Clock className="w-3 h-3" />
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-100 text-slate-900 text-xs font-medium">
+                              <Clock size={12} weight="duotone" />
                               In Progress
                             </span>
                           )}
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-slate-600">
                             {getTimeAgo(activeThesis.updated_at)}
                           </span>
                         </div>
                         
-                        <h2 className="text-lg font-medium text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
+                        <h2 className="text-lg font-medium text-slate-900 mb-1 group-hover:text-slate-600 transition-colors">
                           {activeThesis.title}
                         </h2>
                         
-                        <p className="text-sm text-slate-500 mb-1">
+                        <p className="text-sm text-slate-600 mb-1">
                           {activeThesis.total_chapters || 0} chapters • {activeThesis.academic_field || 'Academic'} • {activeThesis.writing_style || 'Formal'}
                         </p>
-                        <p className="text-xs text-slate-400 mb-4">
+                        <p className="text-xs text-slate-600 mb-4">
                           APA 7 • University-ready
                         </p>
                         
@@ -282,55 +292,51 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-3">
                           <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <div 
-                              className={`h-full rounded-full transition-all ${
-                                activeThesis.status === 'generating' 
-                                  ? 'bg-blue-500 animate-pulse' 
-                                  : 'bg-amber-500'
-                              }`}
+                              className="h-full rounded-full transition-all bg-slate-900"
                               style={{ width: `${activeThesis.total_chapters ? Math.min(((activeThesis.outline?.chapters?.length || 0) / activeThesis.total_chapters) * 100, 100) : 0}%` }}
                             />
                           </div>
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-slate-600">
                             {activeThesis.outline?.chapters?.length || 0}/{activeThesis.total_chapters || 0} chapters
                           </span>
                         </div>
                       </div>
                       
                       <div className="ml-4">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-blue-50 flex items-center justify-center transition-colors">
-                          <Play className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-slate-200 flex items-center justify-center transition-colors">
+                          <Play size={16} weight="fill" className="text-slate-600 group-hover:text-slate-900 transition-colors" />
                         </div>
                       </div>
                     </div>
                     
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-sm font-medium text-blue-600">
+                    <div className="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-900">
                         {activeThesis.status === 'generating' ? 'View Progress' : 'Continue Writing'}
                       </span>
-                      <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight size={16} className="text-slate-900 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </Link>
               ) : (
                 // Create New Card
                 <Link href="/app/new">
-                  <div className="group relative rounded-2xl p-6 bg-slate-900 hover:bg-slate-800 transition-all duration-300">
+                  <div className="group relative rounded-2xl p-6 bg-slate-50 hover:bg-slate-100 transition-all duration-300">
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/10 text-white/80 text-xs font-medium mb-3">
-                          <Zap className="w-3 h-3" />
+                        <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-100 text-slate-900/80 text-xs font-medium mb-3">
+                          <Lightning size={12} weight="fill" />
                           AI-Powered
                         </div>
                         
-                        <h2 className="text-lg font-medium text-white mb-1">
+                        <h2 className="text-lg font-medium text-slate-900 mb-1">
                           Create New Thesis
                         </h2>
                         
-                        <p className="text-sm text-slate-400 mb-4">
+                        <p className="text-sm text-slate-600 mb-4">
                           Generate a complete academic thesis in minutes
                         </p>
                         
-                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                        <div className="flex items-center gap-4 text-xs text-slate-600">
                           <span>APA 7</span>
                           <span>•</span>
                           <span>MLA</span>
@@ -339,16 +345,16 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       
-                      <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                        <Plus className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                        <Plus size={20} className="text-slate-900" />
                       </div>
                     </div>
                     
-                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
-                      <span className="text-sm font-medium text-white">
+                    <div className="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-900">
                         Get Started
                       </span>
-                      <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight size={16} className="text-slate-900 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </Link>
@@ -359,9 +365,9 @@ export default function DashboardPage() {
             {completedTheses.length > 0 && (
               <motion.div variants={itemVariants}>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-medium text-slate-700">Submission-Ready</h3>
-                  <Link href="/app/theses" className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1">
-                    View all <ChevronRight className="w-3 h-3" />
+                  <h3 className="text-sm font-medium text-slate-600">Submission-Ready</h3>
+                  <Link href="/app/theses" className="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1">
+                    View all <CaretRight size={12} />
                   </Link>
                 </div>
                 
@@ -369,18 +375,18 @@ export default function DashboardPage() {
                   {completedTheses.slice(0, 3).map((thesis) => (
                     <Link key={thesis.id} href={`/app/thesis/${thesis.id}`}>
                       <div className="group flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                          <CheckCircle size={16} weight="duotone" className="text-slate-900" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                          <h4 className="text-sm font-medium text-slate-900 truncate group-hover:text-slate-600 transition-colors">
                             {thesis.title}
                           </h4>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-slate-600">
                             {thesis.total_words?.toLocaleString() || 0} words • {chapterCounts[thesis.id] ?? thesis.total_chapters ?? 0} chapters
                           </p>
                         </div>
-                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                        <ArrowRight size={16} className="text-slate-600 group-hover:text-slate-900 transition-colors" />
                       </div>
                     </Link>
                   ))}
@@ -392,9 +398,9 @@ export default function DashboardPage() {
             {activeThesis && (
               <motion.div variants={itemVariants}>
                 <Link href="/app/new">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors">
-                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center">
-                      <Plus className="w-4 h-4 text-slate-500" />
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center">
+                      <Plus size={16} className="text-slate-600" />
                     </div>
                     <span className="text-sm text-slate-600">Start another thesis</span>
                   </div>
@@ -408,12 +414,12 @@ export default function DashboardPage() {
             
             {/* AI Assistant Panel */}
             <motion.div variants={itemVariants}>
-              <div className="rounded-2xl p-5 bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
+              <div className="rounded-2xl p-5 bg-white border border-slate-200">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-                    <MessageSquare className="w-3.5 h-3.5 text-white" />
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center">
+                    <ChatCircle size={14} weight="duotone" className="text-slate-900" />
                   </div>
-                  <span className="text-sm font-medium text-slate-700">AI Assistant</span>
+                  <span className="text-sm font-medium text-slate-600">AI Assistant</span>
                 </div>
                 
                 <p className="text-sm text-slate-600 mb-4 leading-relaxed">
@@ -426,27 +432,27 @@ export default function DashboardPage() {
                 {activeThesis ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-medium">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-medium">
                         Suggested
                       </span>
                     </div>
                     <Link href={`/app/thesis/${activeThesis.id}`}>
                       <Button size="sm" variant="secondary" className="w-full justify-start text-xs h-8">
-                        <Sparkles className="w-3 h-3 mr-2" />
+                        <Sparkle size={12} weight="duotone" className="mr-2" />
                         Generate next chapter
                       </Button>
                     </Link>
                     <Link href="/app/new">
-                      <Button size="sm" variant="ghost" className="w-full justify-start text-xs h-8 text-slate-500">
-                        <Plus className="w-3 h-3 mr-2" />
+                      <Button size="sm" variant="ghost" className="w-full justify-start text-xs h-8 text-slate-600">
+                        <Plus size={12} className="mr-2" />
                         New thesis
                       </Button>
                     </Link>
                   </div>
                 ) : (
                   <Link href="/app/new">
-                    <Button size="sm" className="w-full text-xs h-8 bg-blue-600 hover:bg-blue-700">
-                      <Zap className="w-3 h-3 mr-2" />
+                    <Button size="sm" className="w-full text-xs h-8 bg-slate-900 hover:bg-slate-800 text-white">
+                      <Lightning size={12} weight="fill" className="mr-2" />
                       Create Thesis
                     </Button>
                   </Link>
@@ -457,33 +463,40 @@ export default function DashboardPage() {
             {/* Insights Panel - Replace Stats */}
             <motion.div variants={itemVariants}>
               <div className="rounded-2xl p-5 bg-white border border-slate-200">
-                <h3 className="text-sm font-medium text-slate-700 mb-4">Insights</h3>
+                <h3 className="text-sm font-medium text-slate-600 mb-4">Insights</h3>
                 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500">Total written</span>
+                    <span className="text-xs text-slate-600">Total written</span>
                     <span className="text-sm font-medium text-slate-900">
                       {totalWords.toLocaleString()} words
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500">Avg. chapters</span>
+                    <span className="text-xs text-slate-600">Hours saved</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      ~{hoursSaved}h of writing
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-600">Avg. chapters</span>
                     <span className="text-sm font-medium text-slate-900">
                       {avgChapters} per thesis
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500">Completed</span>
-                    <span className="text-sm font-medium text-emerald-600">
+                    <span className="text-xs text-slate-600">Completed</span>
+                    <span className="text-sm font-medium text-slate-900">
                       {completedTheses.length} submission-ready
                     </span>
                   </div>
                   
-                  <div className="pt-3 border-t border-slate-100">
+                  <div className="pt-3 border-t border-slate-200">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">Formatting</span>
+                      <span className="text-xs text-slate-600">Formatting</span>
                       <div className="flex items-center gap-1">
                         <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600">APA</span>
                         <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600">MLA</span>
@@ -499,17 +512,17 @@ export default function DashboardPage() {
             {!isPro && (
               <motion.div variants={itemVariants}>
                 <Link href="/app/upgrade">
-                  <div className="rounded-2xl p-4 bg-gradient-to-br from-violet-600 to-purple-700 text-white hover:from-violet-500 hover:to-purple-600 transition-all">
+                  <div className="rounded-2xl p-4 bg-slate-50 border border-slate-200 text-slate-900 hover:bg-slate-100 transition-all">
                     <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="w-4 h-4" />
-                      <span className="text-xs font-medium text-white/80">Pro Plan</span>
+                      <Sparkle size={16} weight="duotone" />
+                      <span className="text-xs font-medium text-slate-600">Pro Plan</span>
                     </div>
                     <p className="text-sm font-medium mb-1">Unlimited theses</p>
-                    <p className="text-xs text-white/70 mb-3">
+                    <p className="text-xs text-slate-600 mb-3">
                       All chapters • Priority generation
                     </p>
                     <div className="flex items-center text-xs font-medium">
-                      Upgrade <ArrowRight className="w-3 h-3 ml-1" />
+                      Upgrade <ArrowRight size={12} className="ml-1" />
                     </div>
                   </div>
                 </Link>
@@ -522,12 +535,12 @@ export default function DashboardPage() {
                 <div className="rounded-2xl p-5 bg-white border border-slate-200">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <Download className="w-4 h-4 text-slate-500" />
-                      <h3 className="text-sm font-medium text-slate-700">Exports</h3>
+                      <ExportIcon size={16} className="text-slate-600" />
+                      <h3 className="text-sm font-medium text-slate-600">Exports</h3>
                     </div>
                     {exports.filter(e => e.status === 'pending' || e.status === 'processing').length > 0 && (
-                      <span className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                      <span className="flex items-center gap-1 text-[10px] text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">
+                        <SpinnerGap size={10} className="animate-spin" />
                         Processing
                       </span>
                     )}
@@ -537,27 +550,23 @@ export default function DashboardPage() {
                     {exports.slice(0, 5).map((exp) => (
                       <div 
                         key={exp.id} 
-                        className="flex items-center gap-2 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+                        className="flex items-center gap-2 p-2 rounded-lg bg-white hover:bg-slate-100 transition-colors"
                       >
-                        <div className={`w-6 h-6 rounded flex items-center justify-center ${
-                          exp.status === 'completed' ? 'bg-emerald-100' :
-                          exp.status === 'failed' ? 'bg-red-100' :
-                          'bg-blue-100'
-                        }`}>
+                        <div className={`w-6 h-6 rounded flex items-center justify-center bg-slate-100`}>
                           {exp.status === 'completed' ? (
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <CheckCircle size={12} weight="duotone" className="text-slate-900" />
                           ) : exp.status === 'failed' ? (
-                            <AlertCircle className="w-3 h-3 text-red-600" />
+                            <WarningCircle size={12} className="text-red-400" />
                           ) : (
-                            <Loader2 className="w-3 h-3 text-blue-600 animate-spin" />
+                            <SpinnerGap size={12} className="text-slate-900 animate-spin" />
                           )}
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-slate-700 truncate">
+                          <p className="text-xs font-medium text-slate-600 truncate">
                             {exp.thesis_title}
                           </p>
-                          <p className="text-[10px] text-slate-500">
+                          <p className="text-[10px] text-slate-600">
                             {exp.format.toUpperCase()} • {exp.file_size ? `${(exp.file_size / 1024).toFixed(0)} KB` : getTimeAgo(exp.created_at)}
                           </p>
                         </div>
@@ -566,18 +575,18 @@ export default function DashboardPage() {
                           {exp.status === 'completed' && (
                             <button
                               onClick={() => handleDownload(exp.id)}
-                              className="p-1.5 rounded hover:bg-slate-200 text-slate-500 hover:text-blue-600 transition-colors"
+                              className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
                               title="Download"
                             >
-                              <Download className="w-3.5 h-3.5" />
+                              <ExportIcon size={14} />
                             </button>
                           )}
                           <button
                             onClick={() => handleDeleteExport(exp.id)}
-                            className="p-1.5 rounded hover:bg-slate-200 text-slate-400 hover:text-red-500 transition-colors"
+                            className="p-1.5 rounded hover:bg-slate-100 text-slate-600 hover:text-red-400 transition-colors"
                             title="Delete"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash size={14} />
                           </button>
                         </div>
                       </div>
@@ -589,12 +598,12 @@ export default function DashboardPage() {
 
             {/* Academic Standards */}
             <motion.div variants={itemVariants}>
-              <div className="rounded-xl p-4 bg-slate-50 border border-slate-200">
+              <div className="rounded-xl p-4 bg-white border border-slate-200">
                 <div className="flex items-center gap-2 mb-2">
-                  <BookOpen className="w-4 h-4 text-slate-400" />
+                  <BookOpen size={16} weight="duotone" className="text-slate-600" />
                   <span className="text-xs font-medium text-slate-600">Academic Standards</span>
                 </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
+                <p className="text-[11px] text-slate-600 leading-relaxed">
                   All theses follow university formatting guidelines and citation standards. Export in PDF, DOCX, or LaTeX.
                 </p>
               </div>

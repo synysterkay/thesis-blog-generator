@@ -41,6 +41,47 @@ export default function robots(): MetadataRoute.Robots {
           '/app/settings',
         ],
       },
+      // AI crawlers — explicitly allowed
+      {
+        userAgent: 'GPTBot',
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        disallow: ['/api/', '/auth/', '/app/'],
+      },
+      {
+        userAgent: 'ChatGPT-User',
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        disallow: ['/api/', '/auth/', '/app/'],
+      },
+      {
+        userAgent: 'Google-Extended',
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        disallow: ['/api/', '/auth/', '/app/'],
+      },
+      {
+        userAgent: 'anthropic-ai',
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        disallow: ['/api/', '/auth/', '/app/'],
+      },
+      {
+        userAgent: 'ClaudeBot',
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        disallow: ['/api/', '/auth/', '/app/'],
+      },
+      {
+        userAgent: 'PerplexityBot',
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        disallow: ['/api/', '/auth/', '/app/'],
+      },
+      {
+        userAgent: 'Bytespider',
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        disallow: ['/api/', '/auth/', '/app/'],
+      },
+      {
+        userAgent: 'cohere-ai',
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        disallow: ['/api/', '/auth/', '/app/'],
+      },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,

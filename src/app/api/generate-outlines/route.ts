@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, field, chapters } = await request.json();
+    const { title, description, field, chapters, language = 'English' } = await request.json();
 
     if (!title || !field || !chapters || !Array.isArray(chapters)) {
       return NextResponse.json(
@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
 Thesis Title: ${title}
 ${description ? `Description: ${description}` : ''}
 Academic Field: ${field}
+Language: ${language}
 
 Chapters:
 ${chapters.map((c: string, i: number) => `${i + 1}. ${c}`).join('\n')}
@@ -34,6 +35,7 @@ For each chapter, generate 3-5 appropriate subchapters/sections that:
 3. Are specific to the thesis topic and chapter content
 4. Follow academic conventions for the ${field} field
 5. Cover the essential aspects that should be addressed in each chapter
+6. ALL subchapter titles MUST be written in ${language}
 
 IMPORTANT: Return ONLY a valid JSON object where each key is the chapter number (1, 2, 3, etc.) and the value is an array of subchapter titles. Example format:
 {
@@ -55,7 +57,7 @@ Do not include the chapter numbers in the subchapter titles, just the descriptiv
         messages: [
           {
             role: 'system',
-            content: 'You are an academic thesis structure expert. You only respond with valid JSON objects.',
+            content: `You are an academic thesis structure expert. You only respond with valid JSON objects.${language !== 'English' ? ` You MUST write all subchapter titles in ${language}. Do NOT use English.` : ''}`,
           },
           {
             role: 'user',

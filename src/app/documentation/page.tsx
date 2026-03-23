@@ -9,16 +9,16 @@ import { motion } from 'framer-motion';
 import { 
   BookOpen, 
   Rocket, 
-  Settings, 
+  GearSix, 
   FileText, 
   Palette, 
-  Download,
-  ChevronRight,
-  Search,
-  Zap,
-  Shield,
+  DownloadSimple,
+  CaretRight,
+  MagnifyingGlass,
+  Lightning,
+  ShieldCheck,
   CreditCard
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 const categories = [
   {
@@ -35,7 +35,7 @@ const categories = [
   },
   {
     id: 'features',
-    icon: Zap,
+    icon: Lightning,
     title: 'Features',
     description: 'Explore all Thesis Generator capabilities',
     articles: [
@@ -48,7 +48,7 @@ const categories = [
   },
   {
     id: 'export',
-    icon: Download,
+    icon: DownloadSimple,
     title: 'Export & Formatting',
     description: 'Download your thesis in various formats',
     articles: [
@@ -60,7 +60,7 @@ const categories = [
   },
   {
     id: 'account',
-    icon: Settings,
+    icon: GearSix,
     title: 'Account & Settings',
     description: 'Manage your account and preferences',
     articles: [
@@ -84,7 +84,7 @@ const categories = [
   },
   {
     id: 'privacy',
-    icon: Shield,
+    icon: ShieldCheck,
     title: 'Privacy & Security',
     description: 'How we protect your data',
     articles: [
@@ -114,14 +114,14 @@ export default function DocumentationPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-32 pb-12 bg-gradient-to-b from-blue-50 to-white">
+      <section className="pt-32 pb-12 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-              <BookOpen className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-slate-700 flex items-center justify-center">
+              <BookOpen size={32} className="text-white" />
             </div>
             <h1 className="text-4xl font-bold text-slate-900 mb-4">Documentation</h1>
             <p className="text-xl text-slate-600 mb-8">
@@ -130,13 +130,13 @@ export default function DocumentationPage() {
 
             {/* Search */}
             <div className="relative max-w-xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <MagnifyingGlass size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search documentation..."
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
               />
             </div>
           </motion.div>
@@ -156,8 +156,8 @@ export default function DocumentationPage() {
               >
                 <Card className="h-full p-6 hover:shadow-lg transition-shadow">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <category.icon className="w-5 h-5 text-blue-600" />
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                      <category.icon size={20} className="text-slate-600" />
                     </div>
                     <h2 className="font-semibold text-slate-900">{category.title}</h2>
                   </div>
@@ -167,9 +167,9 @@ export default function DocumentationPage() {
                       <li key={article.slug}>
                         <Link
                           href={`/documentation/${category.id}/${article.slug}`}
-                          className="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600 transition-colors group"
+                          className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors group"
                         >
-                          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                          <CaretRight size={16} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
                           {article.title}
                         </Link>
                       </li>
@@ -190,15 +190,15 @@ export default function DocumentationPage() {
             {[
               { icon: FileText, title: 'Create Your First Thesis', href: '/documentation/getting-started/first-thesis' },
               { icon: Palette, title: 'Customize Formatting', href: '/documentation/export/formatting' },
-              { icon: Download, title: 'Export to PDF', href: '/documentation/export/export-pdf' },
+              { icon: DownloadSimple, title: 'Export to PDF', href: '/documentation/export/export-pdf' },
             ].map((item, index) => (
               <Link
                 key={index}
                 href={item.href}
-                className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all group"
+                className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-200 hover:border-slate-400 hover:shadow-md transition-all group"
               >
-                <item.icon className="w-5 h-5 text-slate-400 group-hover:text-blue-600" />
-                <span className="text-sm font-medium text-slate-700 group-hover:text-blue-600">
+                <item.icon size={20} className="text-slate-400 group-hover:text-slate-600" />
+                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">
                   {item.title}
                 </span>
               </Link>
@@ -210,14 +210,14 @@ export default function DocumentationPage() {
       {/* CTA */}
       <section className="py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="p-8 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-center">
+          <Card className="p-8 bg-slate-800 text-white text-center">
             <h2 className="text-2xl font-bold mb-3">Can&apos;t find what you&apos;re looking for?</h2>
-            <p className="text-blue-100 mb-6">
+            <p className="text-slate-300 mb-6">
               Our support team is here to help you with any questions
             </p>
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors"
             >
               Contact Support
             </Link>

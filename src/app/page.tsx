@@ -5,14 +5,14 @@ import {
   HowItWorks,
   ComparisonSection,
   StatsSection,
+  TrustLogos,
   TestimonialsSection,
   PricingSection,
   FAQSection,
   CTASection,
+  StickyCTA,
   Footer,
 } from '@/components/landing';
-import { MobileAppPopup } from '@/components/mobile-app-popup';
-
 export default function HomePage() {
   return (
     <main className="min-h-screen">
@@ -22,12 +22,13 @@ export default function HomePage() {
       <HowItWorks />
       <ComparisonSection />
       <StatsSection />
+      <TrustLogos />
       <TestimonialsSection />
       <PricingSection />
       <FAQSection />
       <CTASection />
+      <StickyCTA />
       <Footer />
-      <MobileAppPopup />
     </main>
   );
 }

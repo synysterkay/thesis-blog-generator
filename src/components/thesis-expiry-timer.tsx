@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Clock, AlertTriangle, Sparkles } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Clock, Warning, Sparkle } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -17,9 +17,11 @@ export function ThesisExpiryTimer({ expiresAt, onExpired }: ThesisExpiryTimerPro
     minutes: number;
     expired: boolean;
   } | null>(null);
+  const expiredFired = useRef(false);
 
   useEffect(() => {
     if (!expiresAt) return;
+    expiredFired.current = false;
 
     const calculateTimeLeft = () => {
       const expiry = new Date(expiresAt);
@@ -28,7 +30,10 @@ export function ThesisExpiryTimer({ expiresAt, onExpired }: ThesisExpiryTimerPro
 
       if (diff <= 0) {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, expired: true });
-        onExpired?.();
+        if (!expiredFired.current) {
+          expiredFired.current = true;
+          onExpired?.();
+        }
         return;
       }
 
@@ -40,7 +45,7 @@ export function ThesisExpiryTimer({ expiresAt, onExpired }: ThesisExpiryTimerPro
     };
 
     calculateTimeLeft();
-    const interval = setInterval(calculateTimeLeft, 60000); // Update every minute
+    const interval = setInterval(calculateTimeLeft, 60000);
 
     return () => clearInterval(interval);
   }, [expiresAt, onExpired]);
@@ -52,19 +57,19 @@ export function ThesisExpiryTimer({ expiresAt, onExpired }: ThesisExpiryTimerPro
 
   if (timeLeft.expired) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
+          <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0">
+            <Warning size={20} className="text-red-400" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-red-800 text-sm">Thesis Expired</h3>
-            <p className="text-xs text-red-600 mt-0.5">
-              This thesis is no longer accessible. Upgrade to Pro for unlimited access.
+            <h3 className="font-semibold text-slate-900 text-sm">Free Preview Ended</h3>
+            <p className="text-xs text-red-500 mt-0.5">
+              Your thesis is still saved. Upgrade to Pro to regain access.
             </p>
             <Link href="/app/upgrade" className="inline-block mt-2">
               <Button size="sm" className="gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkle size={14} />
                 Upgrade to Pro
               </Button>
             </Link>
@@ -77,46 +82,42 @@ export function ThesisExpiryTimer({ expiresAt, onExpired }: ThesisExpiryTimerPro
   return (
     <div className={`rounded-xl p-4 ${
       isCritical 
-        ? 'bg-red-50 border border-red-200' 
+        ? 'bg-red-500/10 border border-red-500/20' 
         : isUrgent 
-          ? 'bg-amber-50 border border-amber-200'
-          : 'bg-blue-50 border border-blue-200'
+          ? 'bg-amber-500/10 border border-amber-500/20'
+          : 'bg-slate-50 border border-slate-200'
     }`}>
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
             isCritical 
-              ? 'bg-red-100' 
+              ? 'bg-red-500/20' 
               : isUrgent 
-                ? 'bg-amber-100'
-                : 'bg-blue-100'
+                ? 'bg-amber-500/20'
+                : 'bg-slate-100'
           }`}>
-            <Clock className={`w-5 h-5 ${
-              isCritical 
-                ? 'text-red-600' 
-                : isUrgent 
-                  ? 'text-amber-600'
-                  : 'text-blue-600'
-            }`} />
+            <Clock size={20} className={
+              isCritical ? 'text-red-400' : isUrgent ? 'text-amber-400' : 'text-slate-600'
+            } />
           </div>
           <div>
             <h3 className={`font-semibold text-sm ${
               isCritical 
-                ? 'text-red-800' 
+                ? 'text-red-300' 
                 : isUrgent 
-                  ? 'text-amber-800'
-                  : 'text-blue-800'
+                  ? 'text-amber-300'
+                  : 'text-slate-900'
             }`}>
               {isCritical ? '⚠️ Expires Today!' : isUrgent ? 'Expiring Soon' : 'Free Tier Access'}
             </h3>
             <p className={`text-xs mt-0.5 ${
               isCritical 
-                ? 'text-red-600' 
+                ? 'text-red-400' 
                 : isUrgent 
-                  ? 'text-amber-600'
-                  : 'text-blue-600'
+                  ? 'text-amber-400'
+                  : 'text-slate-600'
             }`}>
-              Export before it&apos;s gone
+              {isCritical ? 'Download today to keep your thesis' : 'Upgrade anytime to keep full access'}
             </p>
           </div>
         </div>
@@ -126,77 +127,41 @@ export function ThesisExpiryTimer({ expiresAt, onExpired }: ThesisExpiryTimerPro
           <div className="flex items-center gap-1.5 text-right">
             {timeLeft.days > 0 && (
               <div className={`px-2 py-1 rounded-lg ${
-                isCritical 
-                  ? 'bg-red-100' 
-                  : isUrgent 
-                    ? 'bg-amber-100'
-                    : 'bg-blue-100'
+                isCritical ? 'bg-red-500/20' : isUrgent ? 'bg-amber-500/20' : 'bg-slate-100'
               }`}>
                 <span className={`text-lg font-bold ${
-                  isCritical 
-                    ? 'text-red-700' 
-                    : isUrgent 
-                      ? 'text-amber-700'
-                      : 'text-blue-700'
+                  isCritical ? 'text-red-300' : isUrgent ? 'text-amber-300' : 'text-slate-900'
                 }`}>{timeLeft.days}</span>
                 <span className={`text-[10px] ml-0.5 ${
-                  isCritical 
-                    ? 'text-red-500' 
-                    : isUrgent 
-                      ? 'text-amber-500'
-                      : 'text-blue-500'
+                  isCritical ? 'text-red-400' : isUrgent ? 'text-amber-400' : 'text-slate-600'
                 }`}>d</span>
               </div>
             )}
             <div className={`px-2 py-1 rounded-lg ${
-              isCritical 
-                ? 'bg-red-100' 
-                : isUrgent 
-                  ? 'bg-amber-100'
-                  : 'bg-blue-100'
+              isCritical ? 'bg-red-500/20' : isUrgent ? 'bg-amber-500/20' : 'bg-slate-100'
             }`}>
               <span className={`text-lg font-bold ${
-                isCritical 
-                  ? 'text-red-700' 
-                  : isUrgent 
-                    ? 'text-amber-700'
-                    : 'text-blue-700'
+                isCritical ? 'text-red-300' : isUrgent ? 'text-amber-300' : 'text-slate-900'
               }`}>{timeLeft.hours}</span>
               <span className={`text-[10px] ml-0.5 ${
-                isCritical 
-                  ? 'text-red-500' 
-                  : isUrgent 
-                    ? 'text-amber-500'
-                    : 'text-blue-500'
+                isCritical ? 'text-red-400' : isUrgent ? 'text-amber-400' : 'text-slate-600'
               }`}>h</span>
             </div>
             <div className={`px-2 py-1 rounded-lg ${
-              isCritical 
-                ? 'bg-red-100' 
-                : isUrgent 
-                  ? 'bg-amber-100'
-                  : 'bg-blue-100'
+              isCritical ? 'bg-red-500/20' : isUrgent ? 'bg-amber-500/20' : 'bg-slate-100'
             }`}>
               <span className={`text-lg font-bold ${
-                isCritical 
-                  ? 'text-red-700' 
-                  : isUrgent 
-                    ? 'text-amber-700'
-                    : 'text-blue-700'
+                isCritical ? 'text-red-300' : isUrgent ? 'text-amber-300' : 'text-slate-900'
               }`}>{timeLeft.minutes}</span>
               <span className={`text-[10px] ml-0.5 ${
-                isCritical 
-                  ? 'text-red-500' 
-                  : isUrgent 
-                    ? 'text-amber-500'
-                    : 'text-blue-500'
+                isCritical ? 'text-red-400' : isUrgent ? 'text-amber-400' : 'text-slate-600'
               }`}>m</span>
             </div>
           </div>
 
           <Link href="/app/upgrade">
             <Button size="sm" variant={isCritical ? 'default' : 'outline'} className="gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkle size={14} />
               {isCritical ? 'Unlock Now' : 'Upgrade'}
             </Button>
           </Link>

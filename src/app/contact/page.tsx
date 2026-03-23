@@ -6,7 +6,7 @@ import { Footer } from '@/components/landing/footer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Mail, MessageCircle, Loader2 } from 'lucide-react';
+import { PaperPlaneTilt, Robot, User, Envelope, ChatCircle, SpinnerGap } from '@phosphor-icons/react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -94,14 +94,14 @@ export default function ContactPage() {
               transition={{ delay: 0.1 }}
             >
               <Card className="h-[600px] flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
+                <div className="p-4 border-b border-slate-200 bg-slate-800 text-white">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <Bot className="w-5 h-5" />
+                      <Robot size={20} />
                     </div>
                     <div>
                       <h3 className="font-semibold">Thesis Generator Support</h3>
-                      <p className="text-sm text-blue-100">AI-Powered Assistant</p>
+                      <p className="text-sm text-slate-300">AI-Powered Assistant</p>
                     </div>
                   </div>
                 </div>
@@ -116,14 +116,14 @@ export default function ContactPage() {
                         className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}
                       >
                         {message.role === 'assistant' && (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
-                            <Bot className="w-4 h-4 text-white" />
+                          <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center flex-shrink-0">
+                            <Robot size={16} className="text-white" />
                           </div>
                         )}
                         <div
                           className={`max-w-[80%] p-3 rounded-2xl ${
                             message.role === 'user'
-                              ? 'bg-blue-600 text-white rounded-br-md'
+                              ? 'bg-slate-700 text-white rounded-br-md'
                               : 'bg-white border border-slate-200 text-slate-700 rounded-bl-md'
                           }`}
                         >
@@ -131,7 +131,7 @@ export default function ContactPage() {
                         </div>
                         {message.role === 'user' && (
                           <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                            <User className="w-4 h-4 text-slate-600" />
+                            <User size={16} className="text-slate-600" />
                           </div>
                         )}
                       </motion.div>
@@ -143,11 +143,11 @@ export default function ContactPage() {
                       animate={{ opacity: 1 }}
                       className="flex gap-3"
                     >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                        <Bot className="w-4 h-4 text-white" />
+                      <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center">
+                        <Robot size={16} className="text-white" />
                       </div>
                       <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-bl-md">
-                        <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                        <SpinnerGap size={20} className="animate-spin text-slate-500" />
                       </div>
                     </motion.div>
                   )}
@@ -162,11 +162,11 @@ export default function ContactPage() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                       placeholder="Type your question..."
-                      className="flex-1 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                       disabled={isLoading}
                     />
                     <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
-                      <Send className="w-4 h-4" />
+                      <PaperPlaneTilt size={16} />
                     </Button>
                   </div>
                   <p className="text-xs text-slate-400 mt-2 text-center">
@@ -185,8 +185,8 @@ export default function ContactPage() {
             >
               <Card className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <Mail className="w-6 h-6 text-blue-600" />
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                    <Envelope size={24} className="text-slate-600" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900 mb-1">Email Support</h3>
@@ -195,7 +195,7 @@ export default function ContactPage() {
                     </p>
                     <a
                       href="mailto:hello@thesisgenerator.tech"
-                      className="text-blue-600 hover:underline font-medium"
+                      className="text-slate-700 hover:underline font-medium"
                     >
                       hello@thesisgenerator.tech
                     </a>
@@ -206,8 +206,8 @@ export default function ContactPage() {
 
               <Card className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <MessageCircle className="w-6 h-6 text-green-600" />
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                    <ChatCircle size={24} className="text-slate-600" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900 mb-1">AI Chat Support</h3>
@@ -224,12 +224,12 @@ export default function ContactPage() {
                 </div>
               </Card>
 
-              <Card className="p-6 bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
+              <Card className="p-6 bg-slate-800 text-white">
                 <h3 className="font-semibold mb-2">Need Immediate Help?</h3>
-                <p className="text-blue-100 mb-4">
+                <p className="text-slate-300 mb-4">
                   Our AI assistant is trained to answer most questions instantly. If it can&apos;t help, it will guide you to email us for personal support.
                 </p>
-                <p className="text-sm text-blue-200">
+                <p className="text-sm text-slate-400">
                   Available 24/7 • Instant responses • Always learning
                 </p>
               </Card>
