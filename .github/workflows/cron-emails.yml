@@ -1,0 +1,32 @@
+# Replaces the Vercel crons:
+#   { path: /api/email/drip,      schedule: "0 9 * * *"  }
+#   { path: /api/email/lifecycle, schedule: "0 10 * * *" }
+#
+# Both endpoints check `Authorization: Bearer ${CRON_SECRET}`.
+# Setup:
+#   - repo variable APP_BASE_URL  (the Render URL)
+#   - repo secret  CRON_SECRET    (must match the value set in Render)
+# Note: GitHub cron is UTC. Adjust the hours below if you need a local timezone.
+name: cron-emails
+on:
+  schedule:
+    - cron: "0 9 * * *"    # drip — 09:00 UTC
+    - cron: "0 10 * * *"   # lifecycle — 10:00 UTC
+  workflow_dispatch: {}
+jobs:
+  drip:
+    if: github.event.schedule == '0 9 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send drip emails
+        run: |
+          curl -fsS -m 300 -X GET "${{ vars.APP_BASE_URL }}/api/email/drip" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+  lifecycle:
+    if: github.event.schedule == '0 10 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send lifecycle emails
+        run: |
+          curl -fsS -m 300 -X GET "${{ vars.APP_BASE_URL }}/api/email/lifecycle" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

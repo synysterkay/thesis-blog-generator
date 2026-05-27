@@ -81,8 +81,11 @@ export async function POST(request: Request) {
         // After successful generation, check if this user was referred
         // and qualify the referral (gives referrer 1 credit)
         try {
-          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL 
-            ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+          const baseUrl = process.env.RENDER_EXTERNAL_URL
+            || process.env.NEXT_PUBLIC_APP_URL
+            || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+            || process.env.NEXT_PUBLIC_SITE_URL
+            || 'http://localhost:3000';
           await fetch(`${baseUrl}/api/referral/qualify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

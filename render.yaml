@@ -1,0 +1,73 @@
+# Render Blueprint — deploys the Next.js app as a persistent web service.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Why a "web service" (not static/serverless): this app has long-running
+# routes (AI generation & PDF export set maxDuration=300). A persistent
+# `next start` server has no per-request timeout, so those complete fine.
+#
+# Crons (formerly in vercel.json) are handled by GitHub Actions — see
+# .github/workflows/. Render's native cron jobs are a paid feature.
+services:
+  - type: web
+    name: thesis-generator
+    runtime: node
+    plan: free            # free tier: sleeps after 15 min idle (~50s cold start)
+    region: virginia      # closest to the old Vercel iad1 region
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # ---- Non-secret config (safe to commit) ----
+      - key: DEEPSEEK_API_BASE_URL
+        value: https://api.deepseek.com/v1
+      - key: NEXT_PUBLIC_APP_NAME
+        value: Thesis Generator
+      # ---- Secrets & per-env values: set in Render dashboard or via API ----
+      # (sync:false = Render will NOT read these from this file; you provide them)
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: LEMONSQUEEZY_API_KEY
+        sync: false
+      - key: LEMONSQUEEZY_STORE_ID
+        sync: false
+      - key: LEMONSQUEEZY_WEBHOOK_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_LEMONSQUEEZY_MONTHLY_VARIANT_ID
+        sync: false
+      - key: NEXT_PUBLIC_LEMONSQUEEZY_UNLIMITED_VARIANT_ID
+        sync: false
+      - key: NEXT_PUBLIC_LEMONSQUEEZY_EXPORT_VARIANT_ID
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      # ---- Optional (analytics / blog automation) ----
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_REPO_OWNER
+        sync: false
+      - key: GITHUB_REPO_NAME
+        sync: false
+      - key: META_CONVERSIONS_API_TOKEN
+        sync: false
+      - key: META_PIXEL_ID
+        sync: false
+      - key: NEXT_PUBLIC_GA_MEASUREMENT_ID
+        sync: false
+      - key: TIKTOK_ACCESS_TOKEN
+        sync: false

@@ -1,0 +1,21 @@
+# Replaces the Vercel cron: { path: /api/generate/resume, schedule: "* * * * *" }
+#
+# GitHub's scheduled-workflow minimum is every 5 minutes (and runs may be
+# delayed under load). The resume job is a safety net that re-triggers stalled
+# thesis generation chains, so 5-minute granularity is fine — it also keeps the
+# free Render instance warm.
+#
+# Setup: add a repo *variable* APP_BASE_URL (Settings ▸ Secrets and variables ▸
+# Actions ▸ Variables), e.g. https://thesis-generator.onrender.com
+name: cron-resume
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}   # allows manual runs from the Actions tab
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger generation resume
+        run: |
+          curl -fsS -m 60 "${{ vars.APP_BASE_URL }}/api/generate/resume" || exit 0

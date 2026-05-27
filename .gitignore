@@ -8,12 +8,9 @@ out
 dist
 build
 
-# Environment files
+# Environment files (the *.example templates are intentionally tracked)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env*.local
 
 # IDE
 .vscode

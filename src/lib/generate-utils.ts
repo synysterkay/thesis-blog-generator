@@ -26,7 +26,9 @@ export function getWordCountTargets(targetLength: string | null) {
 // Internal API helper
 // ---------------------------------------------------------------------------
 function getAppUrl(): string {
-  // On Vercel, VERCEL_URL is always set (e.g. thesis-xxx.vercel.app)
+  // On Render, RENDER_EXTERNAL_URL is the full URL (e.g. https://thesis-xxx.onrender.com)
+  if (process.env.RENDER_EXTERNAL_URL) return process.env.RENDER_EXTERNAL_URL;
+  // On Vercel, VERCEL_URL is the bare host (e.g. thesis-xxx.vercel.app)
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
   if (process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes('localhost')) {
     return process.env.NEXT_PUBLIC_SITE_URL;
